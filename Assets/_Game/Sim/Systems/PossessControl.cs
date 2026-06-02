@@ -63,6 +63,9 @@ namespace Bulwark.Sim
     /// Runs BEFORE PossessControlSystem so newly spawned units are covered the tick after spawn.
     /// </summary>
     [RequireMatchingQueriesForUpdate]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(SimPhaseBegin))]
+    [UpdateBefore(typeof(SimPhaseEnd))]
     [UpdateBefore(typeof(PossessControlSystem))]
     public partial struct EnsureMoveDestinationSystem : ISystem
     {
@@ -101,6 +104,11 @@ namespace Bulwark.Sim
     /// </summary>
     [BurstCompile]
     [RequireMatchingQueriesForUpdate]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(SimPhaseBegin))]
+    [UpdateBefore(typeof(SimPhaseEnd))]
+    [UpdateAfter(typeof(InfluenceMapSystem))] // slot 3 → 4: orders applied after the influence pass.
+    [UpdateBefore(typeof(TargetingSystem))]   // manual target/move overrides land before auto-targeting.
     public partial struct PossessControlSystem : ISystem
     {
         public void OnCreate(ref SystemState state)

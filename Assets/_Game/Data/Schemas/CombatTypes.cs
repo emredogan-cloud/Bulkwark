@@ -40,4 +40,40 @@ namespace Bulwark.Data
         Heavy      = 6,
         Flanker    = 7,
     }
+
+    // ---------------------------------------------------------------------------
+    // Phase 2 additions (§5.1 factions, §5.3 spells). Names are canon-grounded
+    // (§5.1 IronPact/AshenHorde; §5.3 spell categories + status effects implied by
+    // the named spells); shape labels are implementation. Provisional, LSD-owned.
+    // ---------------------------------------------------------------------------
+
+    /// <summary>The 2 MVP factions (§5.1). Full vision adds Arcane/Mechanized (Phase 7) — NOT here.</summary>
+    public enum Faction : int
+    {
+        IronPact   = 0, // disciplined legion: formations, shields, attrition (§5.1)
+        AshenHorde  = 1, // swarm aggro: speed, flank, expendable (§5.1)
+    }
+
+    /// <summary>
+    /// Status effects applied by spells (§5.3) and read by the combat/spell sim. Each is
+    /// grounded in a §5.3-named spell (Freeze→Chilled, LightningStorm→Burning, Hexcaster/
+    /// poison→Poisoned, Stun→Stunned, GoldRush→GoldBoost, Rage→Raged, Haste→Hasted, Summon).
+    /// </summary>
+    public enum StatusKind : int
+    {
+        None = 0, Chilled = 1, Burning = 2, Poisoned = 3, Stunned = 4,
+        Hasted = 5, Raged = 6, GoldBoost = 7,
+    }
+
+    /// <summary>Spell categories — verbatim from §5.3.</summary>
+    public enum SpellCategory : int
+    {
+        Offensive = 0, Control = 1, Economy = 2, Summon = 3, Buff = 4,
+    }
+
+    /// <summary>Spell target shape (implementation; readability via telegraph, §5.3).</summary>
+    public enum TargetShape : int
+    {
+        Point = 0, Area = 1, Line = 2, Self = 3, AllyArea = 4,
+    }
 }

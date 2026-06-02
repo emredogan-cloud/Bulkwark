@@ -77,6 +77,10 @@ namespace Bulwark.Sim
     /// </summary>
     [BurstCompile]
     [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(SimPhaseBegin))]
+    [UpdateBefore(typeof(SimPhaseEnd))]
+    [UpdateAfter(typeof(TrainingSystem))]   // slot 2 → 3: freshly-spawned units exist before the influence pass.
+    [UpdateBefore(typeof(TargetingSystem))] // Targeting reads this tick's rebuilt buckets.
     public partial struct InfluenceMapSystem : ISystem
     {
         // Binning constants. These are GRID RESOLUTION (engine cost knobs), not gameplay

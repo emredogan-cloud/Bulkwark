@@ -41,6 +41,8 @@ namespace Bulwark.Sim
     /// </summary>
     [BurstCompile]
     [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(SimPhaseBegin))]
+    [UpdateBefore(typeof(SimPhaseEnd))]
     [UpdateAfter(typeof(TargetingSystem))]
     public partial struct MovementSystem : ISystem
     {
@@ -59,6 +61,23 @@ namespace Bulwark.Sim
                               .WithAll<UnitTag>()
                               .WithEntityAccess())
             {
+                // STATUS + TERRAIN move scaling (Spell.cs EDIT 1 + A2 Choke). A Stunned unit halts
+                // entirely; otherwise the base speed is scaled by the status move multiplier
+                // (Chilled slow / Hasted speed, StatusQuery) AND by the unit's occupied terrain
+                // feature MoveMult (Choke < 1; open = 1). Both factors COMBINE into one effective
+                // speed used by BOTH the manual and the auto branch (no fork). Burst-safe: the
+                // StatusQuery helpers are [BurstCompile]+pure; we fetch buffers by entity.
+                float spd = move.ValueRO.Speed;
+                bool stunned = false;
+                if (SystemAPI.HasBuffer<StatusEffect>(e))
+                {
+                    var sbuf = SystemAPI.GetBuffer<StatusEffect>(e);
+                    if (StatusQuery.IsStunned(in sbuf)) stunned = true;          // EDIT 1: stunned ⇒ no move
+                    else spd *= StatusQuery.MoveSpeedMultiplier(in sbuf);        // EDIT 1: Chilled/Hasted
+                }
+                // A2 CHOKE: scale by the occupied feature's MoveMult (Choke < 1; open/absent = 1).
+                if (!stunned) spd *= ResolveOccupiedMoveMult(ref state, e);
+
                 // CONTROL OVERRIDE (§12 / §13 P1.3): PossessControlSystem (which runs BEFORE this
                 // system) consumes ManualOrder and writes the player's move intent into
                 // MoveDestination{Value,Active}. So we read that override here — NOT ManualOrder
@@ -68,10 +87,10 @@ namespace Bulwark.Sim
                 bool manualMove = hasDest && SystemAPI.GetComponent<MoveDestination>(e).Active != 0;
                 if (SystemAPI.HasComponent<Possessed>(e) || manualMove)
                 {
-                    if (manualMove)
+                    if (manualMove && !stunned)
                     {
                         var dest = SystemAPI.GetComponent<MoveDestination>(e);
-                        StepToward(ref pos.ValueRW.Value, dest.Value, move.ValueRO.Speed, dt,
+                        StepToward(ref pos.ValueRW.Value, dest.Value, spd, dt,
                                    stopDist: k_ManualArriveRadius);
                         // ARRIVAL → clear the override (1.4 owns clearing per the handoff contract),
                         // so the unit resumes auto-targeting next tick.
@@ -82,8 +101,11 @@ namespace Bulwark.Sim
                         }
                     }
                     // Pure-possess (no active move override) leaves position to the control shell.
+                    // A stunned manual-move unit holds station (no step) but keeps its override.
                     continue;
                 }
+
+                if (stunned) continue; // EDIT 1: stunned auto unit does not move this tick.
 
                 // AUTO: close on the targeting-owned current target until inside attack range.
                 Entity target = tgt.ValueRO.Current;
@@ -91,7 +113,7 @@ namespace Bulwark.Sim
                     continue;
 
                 float2 targetPos = SystemAPI.GetComponent<Position>(target).Value;
-                StepToward(ref pos.ValueRW.Value, targetPos, move.ValueRO.Speed, dt,
+                StepToward(ref pos.ValueRW.Value, targetPos, spd, dt,
                            stopDist: atk.ValueRO.Range);
             }
         }
@@ -107,6 +129,22 @@ namespace Bulwark.Sim
                     p += (delta / dist) * step;
             }
         }
+
+        /// <summary>
+        /// A2 CHOKE: move-speed multiplier from the terrain feature the unit currently OCCUPIES
+        /// (TerrainOccupancy.Feature → TerrainFeature.MoveMult; Choke &lt; 1, open = 1). No
+        /// occupancy / open ground (Entity.Null) / missing feature / non-positive MoveMult ⇒
+        /// neutral 1.0. TerrainSystem owns occupancy; this only READS it (no geometry computed
+        /// here). Burst-safe (pure SystemAPI component reads).
+        /// </summary>
+        private static float ResolveOccupiedMoveMult(ref SystemState state, Entity unit)
+        {
+            if (!SystemAPI.HasComponent<TerrainOccupancy>(unit)) return 1f;
+            Entity feature = SystemAPI.GetComponent<TerrainOccupancy>(unit).Feature;
+            if (feature == Entity.Null || !SystemAPI.HasComponent<TerrainFeature>(feature)) return 1f;
+            float mv = SystemAPI.GetComponent<TerrainFeature>(feature).MoveMult;
+            return mv > 0f ? mv : 1f;
+        }
     }
 
     /// <summary>
@@ -115,7 +153,13 @@ namespace Bulwark.Sim
     /// </summary>
     [BurstCompile]
     [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(SimPhaseBegin))]
+    [UpdateBefore(typeof(SimPhaseEnd))]
     [UpdateAfter(typeof(MovementSystem))]
+    [UpdateAfter(typeof(TerrainSystem))]            // TerrainOccupancy set before the cover/hazard read (A1).
+    [UpdateAfter(typeof(PositionalSystem))]         // §4 positional slot populated before the chain reads it.
+    [UpdateAfter(typeof(TelegraphResolveSystem))]   // spell status/damage lands before this tick's combat.
+    [UpdateAfter(typeof(CommanderAbilitySystem))]   // commander Raged/Hasted buffs felt by this tick's combat.
     public partial struct CombatSystem : ISystem
     {
         [BurstCompile]
@@ -141,6 +185,14 @@ namespace Bulwark.Sim
                 // Tick the swing cooldown regardless of target state.
                 atk.ValueRW.Cooldown = math.max(0f, atk.ValueRO.Cooldown - dt);
 
+                // STUN GATE (Spell.cs EDIT 3): a Stunned unit CANNOT ACT — no swing this tick.
+                // Burst-safe: StatusQuery is [BurstCompile]+pure; we fetch the buffer by entity.
+                if (SystemAPI.HasBuffer<StatusEffect>(e))
+                {
+                    var sbufStun = SystemAPI.GetBuffer<StatusEffect>(e);
+                    if (StatusQuery.IsStunned(in sbufStun)) continue; // stunned: skip the swing
+                }
+
                 Entity target = tgt.ValueRO.Current;
                 if (target == Entity.Null || !SystemAPI.HasComponent<Position>(target))
                     continue;
@@ -160,16 +212,36 @@ namespace Bulwark.Sim
                                     (1f + profile.ValueRO.Level * profile.ValueRO.PerLevel);
                 float rounded = math.round(levelScaled);
 
-                // typeArmor from the data-baked counter matrix ("basic counters only" at P1).
-                float typeArmor = LookupTypeArmor(matrix, profile.ValueRO.DamageType,
-                                                  ResolveTargetArmor(ref state, target));
+                // typeArmor via the ONE shared §4 lookup (CounterMatrix.Lookup) — the SAME read
+                // the Phase-2 SpellSystem uses, so there is a single type×armor path (no fork).
+                float typeArmor = CounterMatrix.Lookup(matrix, profile.ValueRO.DamageType,
+                                                       ResolveTargetArmor(ref state, target));
 
-                // Neutral SLOTS at P1 (do NOT compute flank/back/terrain geometry — Phase 2.1).
+                // Raged (Spell.cs EDIT 3): outgoing-status factor multiplies INTO the §4 chain
+                // (it joins the SAME chain — no fork). Neutral 1.0 on an empty/absent buffer.
+                float ragedMult = 1f;
+                if (SystemAPI.HasBuffer<StatusEffect>(e))
+                {
+                    var sbufRaged = SystemAPI.GetBuffer<StatusEffect>(e);
+                    ragedMult = StatusQuery.OutgoingDamageMultiplier(in sbufRaged);
+                }
+
+                // TERRAIN COVER (A1, §4/§11): the §4 chain's attacker-side factors are
+                // positional/terrain(attacker HighGround AttackMult, in TerrainFactor)/difficulty;
+                // now also fold in the TARGET's Cover defense — its occupied TerrainFeature's
+                // DefenseMult (Cover < 1; open = 1). Read the target's TerrainOccupancy.Feature →
+                // TerrainFeature.DefenseMult; absent/open ⇒ neutral 1.0. Joins the SAME chain.
+                float coverMult = ResolveTargetCover(ref state, target);
+
+                // §4 modifier chain (Phase 2 populates the previously-neutral positional/terrain
+                // slots via PositionalSystem/TerrainSystem; cover + raged join the same chain).
                 float dmg = rounded
                             * typeArmor
                             * positional.ValueRO.Multiplier
                             * terrain.ValueRO.Multiplier
-                            * difficulty.ValueRO.Multiplier;
+                            * difficulty.ValueRO.Multiplier
+                            * coverMult
+                            * ragedMult;
                 if (dmg < 0f) dmg = 0f;
 
                 // ---- Apply ----
@@ -213,22 +285,20 @@ namespace Bulwark.Sim
         }
 
         /// <summary>
-        /// Counter-matrix lookup at index (damageType-1)*4 + (armorClass-1). Any Unset, out-of-
-        /// range index, or a 0.0 cell is treated as the neutral 1.0 multiplier (matches
-        /// BalanceConfig.GetMultiplier semantics).
+        /// TARGET Cover defense factor (A1, §4/§11): if the target occupies a TerrainFeature with
+        /// Cover (DefenseMult &lt; 1; open = 1), the incoming hit is scaled by that DefenseMult.
+        /// Reads the target's TerrainOccupancy.Feature → TerrainFeature.DefenseMult. Any unit with
+        /// no TerrainOccupancy, an open-ground (Entity.Null) feature, a missing TerrainFeature, or a
+        /// non-positive DefenseMult ⇒ neutral 1.0. The attacker's HighGround AttackMult is already
+        /// folded into TerrainFactor, so this adds ONLY the target-side Cover (no double counting).
         /// </summary>
-        private static float LookupTypeArmor(DynamicBuffer<CounterCell> matrix,
-                                             Bulwark.Data.DamageType dt,
-                                             Bulwark.Data.ArmorClass ac)
+        private static float ResolveTargetCover(ref SystemState state, Entity target)
         {
-            int di = (int)dt - 1;
-            int ai = (int)ac - 1;
-            if (di < 0 || ai < 0) return 1f;
-            if (!matrix.IsCreated || matrix.Length == 0) return 1f;
-            int idx = di * 4 + ai;
-            if (idx < 0 || idx >= matrix.Length) return 1f;
-            float m = matrix[idx].Multiplier;
-            return m != 0f ? m : 1f;
+            if (!SystemAPI.HasComponent<TerrainOccupancy>(target)) return 1f;
+            Entity feature = SystemAPI.GetComponent<TerrainOccupancy>(target).Feature;
+            if (feature == Entity.Null || !SystemAPI.HasComponent<TerrainFeature>(feature)) return 1f;
+            float def = SystemAPI.GetComponent<TerrainFeature>(feature).DefenseMult;
+            return def > 0f ? def : 1f;
         }
     }
 }

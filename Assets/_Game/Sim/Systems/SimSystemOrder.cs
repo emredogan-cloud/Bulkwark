@@ -10,31 +10,43 @@
 // order so the assembly is deterministic-in-ordering (not deterministic-in-math —
 // numeric determinism/replays are a Phase-7 gate, §12, and FORBIDDEN now).
 //
-// THE CANONICAL ORDER (one fixed-step sim tick):
-//   1. MiningSystem        (§13 1.1) — miners on nodes accrue Gold into GoldStore.
-//   2. TrainingSystem      (§13 1.2) — pay Gold, tick TrainOrder, spawn deployed units.
-//   3. InfluenceMapSystem  (§13 1.4) — build the cheap row/lane influence buckets that
-//                                       keep targeting+AI O(1)/unit (§12 perf rule).
-//   4. PossessControlSystem(§13 1.3) — apply player ManualOrder/Possessed intent
-//                                       (input → data; MonoBehaviour writes, sim reads).
-//   5. TargetingSystem     (§13 1.4) — acquire/keep Targeting.Current using the influence
-//                                       map + same-row preference + stickiness (×1.2).
-//   6. BasicAISystem       (§13 1.5) — single-layer utility COMMANDER for Team 1: reads
-//                                       gold/army/statue signals, picks a CommanderStance,
-//                                       biases the AI TrainQueue. Depends on 1.4 (§13 1.5
-//                                       builds on the shared targeting/combat the AI's
-//                                       units use), so it runs AFTER TargetingSystem and
-//                                       BEFORE MovementSystem. It is utility-only (no spells
-//                                       /collectible commanders — those are forbidden now).
-//   7. MovementSystem      (§4/§11)  — close toward Targeting.Current / order along the front.
-//   8. CombatSystem        (§4)      — modifier chain: base × typeArmor × positional ×
-//                                       terrain × difficulty (all factor slots 1.0 at P1);
-//                                       writes StatueDamageInbox when a statue is the target.
-//   9. StatueDamageSystem  (§11)     — drain StatueDamageInbox through shield→health,
-//                                       recompute StatuePhase, throttle trickle; on
-//                                       Health<=0 sets MatchState.Outcome.
-//  10. MatchFlowSystem     (§13 P1)  — owns/finalizes MatchState; once Outcome != Ongoing,
-//                                       FREEZES the sim (disables the systems above).
+// THE CANONICAL ORDER (one fixed-step sim tick). Phase-1 systems are interleaved with the
+// Phase-2 systems wired by the integration pass; the EXACT scheduled order is enforced by each
+// system's [UpdateAfter]/[UpdateBefore] attributes (the hard constraints are documented inline).
+// Listed in tick order:
+//   CounterMatrixValidationSystem (§4)  — one-shot init sanity check on the 20-cell matrix; self-disables.
+//   1.  MiningSystem        (§13 1.1) — miners on nodes accrue Gold into GoldStore.
+//   2.  TrainingSystem      (§13 1.2) — pay Gold, tick TrainOrder, spawn deployed units (per-team catalog).
+//   3.  InfluenceMapSystem  (§13 1.4) — build the cheap row/lane influence buckets (O(1)/unit, §12).
+//   3a. SpellSlotCooldownSystem (§2.4) — tick each side's drafted SpellSlot.Cooldown (before AI reads readiness).
+//   3b. CommanderAbilitySystem  (§2.5) — apply the §6-clamped passive + triggered active buffs (status).
+//       AISchedulerSystem        (§2.6) — advance the budgeted round-robin AI cursor.
+//       SquadAISystem            (§2.6) — per AI squad: posture utility → SquadFormation + train/spell/active requests.
+//       SpellCastSystem          (§2.4) — drain the cast inbox (player + SquadAI), spawn telegraphs.
+//   4.  PossessControlSystem(§13 1.3) — apply player ManualOrder/Possessed intent (input → data).
+//   4a. FormationSystem      (§2.2)   — lay squad members into slots (MoveDestination override).
+//   5.  TargetingSystem     (§13 1.4) — acquire/keep Targeting.Current (stunned units skip re-acquire).
+//   6.  BasicAISystem       (§13 1.5) — single-layer utility commander stance for Team 1.
+//   7.  MovementSystem      (§4/§11)  — close toward Targeting.Current / order; stun-halt + Chilled/Hasted
+//                                       move + Choke MoveMult scale the effective speed (no fork).
+//   7a. EnsurePhase2CombatComponentsSystem (§2.1) — structural: ensure Facing/TerrainOccupancy/
+//                                       StatusEffect buffer/Difficulty slot on every unit.
+//   7b. FacingSystem         (§2.1)   — the SINGLE writer of Facing.Dir (geometry input for positional).
+//   7c. TerrainSystem        (§2.1)   — occupancy + populate the §4 TerrainFactor (HighGround) slot + Hazard tick.
+//   7d. PositionalSystem     (§2.1)   — populate the §4 positional (flank 1.5 / back 2.0) slot vs target.
+//   7e. TelegraphResolveSystem (§2.4) — resolve elapsed telegraphs (offense via the SAME §4 typeArmor read).
+//   8.  CombatSystem        (§4)      — modifier chain: base × typeArmor × positional × terrain ×
+//                                       difficulty × targetCover × ragedOut; statue → inbox.
+//   8a. StatusEffectSystem   (§2.4)   — SINGLE decay/expiry owner; Burning/Poisoned DoT (statue → inbox).
+//   9.  StatueDamageSystem  (§11)     — drain StatueDamageInbox (shield→health), recompute phase, set Outcome.
+//  10.  MatchFlowSystem     (§13 P1)  — owns/finalizes MatchState; on Outcome != Ongoing FREEZES the sim.
+//
+// HARD ORDERING CONSTRAINTS (enforced by attributes; the rest is a guide):
+//   • Facing BEFORE Positional; Positional AFTER Targeting and BEFORE Combat; Terrain BEFORE Combat.
+//   • Commander buffs (CommanderAbility) + spell status (TelegraphResolve) applied BEFORE the Combat
+//     that should feel them. StatusEffect ticks AFTER Combat (DoT coherent, then routed to statue inbox).
+//   • AISchedulerSystem BEFORE SquadAISystem; SpellSlotCooldown BEFORE SquadAI/SpellCast; SpellCast
+//     AFTER SquadAI (same-tick AI casts honored) and BEFORE TelegraphResolve. MatchFlow LAST.
 //
 // HOW SIBLING SYSTEMS PIN THEMSELVES INTO THIS ORDER
 // Each sibling ISystem declares, in ITS OWN file:
@@ -119,10 +131,47 @@ namespace Bulwark.Sim
     public enum RoleId : int { Unset = 0, Miner = 1, Frontline = 2, Skirmisher = 3, Ranged = 4, Caster = 5, Heavy = 6, Flanker = 7 }
 
     /// <summary>
-    /// Singleton tag marking the entity that holds the DynamicBuffer&lt;UnitSpawnStats&gt;
-    /// (the per-side unit roster baked from the authored UnitDef set). TrainingSystem reads it.
+    /// Tag marking an entity that holds a DynamicBuffer&lt;UnitSpawnStats&gt; (a per-side unit
+    /// roster baked from one faction's authored UnitDef set). PHASE-2 TWO-FACTION CHANGE: this is
+    /// now PER-TEAM (Iron Pact vs Ashen Horde) — there is ONE catalog entity per side, keyed by
+    /// <see cref="Team"/>, instead of a single global singleton. Each side's TrainOrder.UnitIndex /
+    /// SpellDef.summonUnitIndex is SIDE-RELATIVE (an index into THAT side's roster). Sim readers
+    /// (TrainingSystem, BasicAI, SquadAI, SpellSummon) resolve the catalog for a specific team via
+    /// <see cref="UnitCatalog.TryGetForTeam"/> — they must NOT use GetSingletonEntity (two exist).
     /// </summary>
-    public struct UnitCatalogTag : IComponentData { }
+    public struct UnitCatalogTag : IComponentData { public int Team; }
+
+    /// <summary>
+    /// Shared per-team unit-catalog lookup (Phase-2 two-faction change). Resolves the
+    /// <see cref="UnitCatalogTag"/> entity (and its <see cref="UnitSpawnStats"/> roster buffer) for
+    /// a given team. Kept here next to the catalog types so every sim reader resolves the correct
+    /// side's roster through ONE place (DRY, §15). Side-relative indexing: the returned buffer is
+    /// indexed by that side's TrainOrder.UnitIndex / SpellDef.summonUnitIndex. Implemented over
+    /// <see cref="EntityManager"/> (NOT SystemAPI) so it is callable from any context — SystemAPI
+    /// source-gen is only valid inside an ISystem body. Cached query; the ≤2 catalogs make it O(1).
+    /// </summary>
+    public static class UnitCatalog
+    {
+        /// <summary>
+        /// Find the catalog entity for <paramref name="team"/> via the EntityManager (linear over
+        /// the ≤2 catalog entities — O(1)). Returns false if no per-team catalog was baked.
+        /// </summary>
+        public static bool TryGetForTeam(EntityManager em, int team, out Entity catalogEntity)
+        {
+            var query = em.CreateEntityQuery(
+                ComponentType.ReadOnly<UnitCatalogTag>(),
+                ComponentType.ReadOnly<UnitSpawnStats>());
+            using var ents = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+            for (int i = 0; i < ents.Length; i++)
+            {
+                if (em.GetComponentData<UnitCatalogTag>(ents[i]).Team != team) continue;
+                catalogEntity = ents[i];
+                return true;
+            }
+            catalogEntity = Entity.Null;
+            return false;
+        }
+    }
 
     // StatueDamageInbox (the per-statue damage inbox buffer CombatSystem appends and
     // StatueDamageSystem drains, §11/§12) is declared ONCE in StatueDamage.cs (its draining
@@ -184,6 +233,24 @@ namespace Bulwark.Sim
         public const string StatueDamageSystem   = nameof(StatueDamageSystem);
         public const string MatchFlowSystem      = nameof(MatchFlowSystem);
 
+        // Phase-2 sim system type names (tactical depth), wired into the order above by the
+        // integration pass. Same convention — siblings reference these via typeof attributes.
+        public const string EnsurePhase2CombatComponentsSystem = nameof(EnsurePhase2CombatComponentsSystem);
+        public const string FacingSystem                = nameof(FacingSystem);                // §2.1 (single Facing writer)
+        public const string TerrainSystem               = nameof(TerrainSystem);               // §2.1
+        public const string PositionalSystem            = nameof(PositionalSystem);            // §2.1
+        public const string FormationSystem             = nameof(FormationSystem);             // §2.2
+        public const string CounterMatrixValidationSystem = nameof(CounterMatrixValidationSystem); // §2.2 (init-only)
+        public const string SpellSlotCooldownSystem     = nameof(SpellSlotCooldownSystem);     // §2.4
+        public const string SpellCastSystem             = nameof(SpellCastSystem);             // §2.4
+        public const string TelegraphResolveSystem      = nameof(TelegraphResolveSystem);      // §2.4
+        public const string StatusEffectSystem          = nameof(StatusEffectSystem);          // §2.4
+        public const string CommanderAbilitySystem      = nameof(CommanderAbilitySystem);      // §2.5
+        public const string AISchedulerSystem           = nameof(AISchedulerSystem);           // §2.6
+        public const string SquadAISystem               = nameof(SquadAISystem);               // §2.6
+        // Control/structural-ensure siblings (run inside the group but are setup, not "work"):
+        public const string EnsureMoveDestinationSystem = nameof(EnsureMoveDestinationSystem); // §1.3 ensure-pass
+
         // Ordering anchors (this file).
         public const string PhaseBegin = nameof(SimPhaseBegin);
         public const string PhaseEnd   = nameof(SimPhaseEnd);
@@ -197,6 +264,7 @@ namespace Bulwark.Sim
         /// </summary>
         public static readonly string[] WorkSystems =
         {
+            // Phase-1 work systems.
             MiningSystem,
             TrainingSystem,
             InfluenceMapSystem,
@@ -206,6 +274,21 @@ namespace Bulwark.Sim
             MovementSystem,
             CombatSystem,
             StatueDamageSystem,
+            // Phase-2 work systems (tactical depth) — frozen with the rest on a decided match so no
+            // spell/commander/AI/terrain work runs after the gate. CounterMatrixValidationSystem is
+            // init-only (self-disables) and EnsureMoveDestination/EnsurePhase2 are structural-ensure
+            // passes; they are intentionally NOT listed (nothing to freeze / they idle when no work remains).
+            SpellSlotCooldownSystem,
+            CommanderAbilitySystem,
+            AISchedulerSystem,
+            SquadAISystem,
+            SpellCastSystem,
+            FormationSystem,
+            FacingSystem,
+            TerrainSystem,
+            PositionalSystem,
+            TelegraphResolveSystem,
+            StatusEffectSystem,
         };
 
         /// <summary>

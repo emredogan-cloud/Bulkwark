@@ -42,6 +42,10 @@ namespace Bulwark.Sim
     /// combat logic — TargetingSystem + CombatSystem (shared) own that for ALL teams.
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(SimPhaseBegin))]
+    [UpdateBefore(typeof(SimPhaseEnd))]
+    [UpdateAfter(typeof(TargetingSystem))] // §13 1.5: commander builds on the shared targeting the AI's units use.
+    [UpdateBefore(typeof(MovementSystem))] // stance/training bias settles before units move this tick.
     public partial struct BasicAISystem : ISystem
     {
         // ---- AI PACING knobs (fairness tuning, NOT unit/combat balance) ----------------
@@ -183,7 +187,7 @@ namespace Bulwark.Sim
 
                 var orders = state.EntityManager.GetBuffer<TrainOrder>(e);
                 sig.QueueLength = orders.Length;
-                sig.QueuedCost = ProjectedUnpaidCost(ref state, orders);
+                sig.QueuedCost = ProjectedUnpaidCost(ref state, team, orders);
                 break;
             }
 
@@ -195,9 +199,9 @@ namespace Bulwark.Sim
         /// avoid queueing more than the side can plausibly fund. Costs come from the
         /// data catalog (UnitSpawnStats.GoldCost) — never hardcoded.
         /// </summary>
-        private int ProjectedUnpaidCost(ref SystemState state, DynamicBuffer<TrainOrder> orders)
+        private int ProjectedUnpaidCost(ref SystemState state, int team, DynamicBuffer<TrainOrder> orders)
         {
-            if (!TryGetCatalog(ref state, out var catalog))
+            if (!TryGetCatalog(ref state, team, out var catalog))
                 return 0;
 
             int total = 0;
@@ -272,7 +276,7 @@ namespace Bulwark.Sim
             if (sig.QueueLength >= MaxQueueLength)
                 return;
 
-            if (!TryGetCatalog(ref state, out var catalog))
+            if (!TryGetCatalog(ref state, team, out var catalog))
                 return;
 
             // Resolve the role -> catalog-index mapping at runtime (data-driven).
@@ -374,10 +378,13 @@ namespace Bulwark.Sim
 
         // ============================ CATALOG HELPERS ============================
 
-        private bool TryGetCatalog(ref SystemState state, out DynamicBuffer<UnitSpawnStats> catalog)
+        // PHASE-2 TWO-FACTION: resolve THIS side's per-team catalog (Iron Pact vs Ashen Horde)
+        // rather than a global singleton — TrainOrder.UnitIndex is side-relative. The AI side's
+        // build-bias must read its own faction's roster (role indices differ per side).
+        private bool TryGetCatalog(ref SystemState state, int team, out DynamicBuffer<UnitSpawnStats> catalog)
         {
             catalog = default;
-            if (!SystemAPI.TryGetSingletonEntity<UnitCatalogTag>(out var catEntity))
+            if (!UnitCatalog.TryGetForTeam(state.EntityManager, team, out var catEntity))
                 return false;
             if (!state.EntityManager.HasBuffer<UnitSpawnStats>(catEntity))
                 return false;

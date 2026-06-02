@@ -14,9 +14,10 @@ namespace Bulwark.Data
     [CreateAssetMenu(fileName = "UnitDef", menuName = "BULWARK/Data/UnitDef", order = 0)]
     public class UnitDef : ScriptableObject
     {
-        [Header("Identity (canon role/type/armor — §5.2)")]
+        [Header("Identity (canon role/type/armor/faction — §5.1/§5.2)")]
         [Tooltip("Stable content id, e.g. ironpact_shieldman.")] public string id;
         public string displayName;
+        public Faction faction = Faction.IronPact; // §5.1; existing P1 Iron Pact assets default correctly (0)
         public UnitRole role = UnitRole.Unset;
         public DamageType damageType = DamageType.Unset;
         public ArmorClass armorClass = ArmorClass.Unset;

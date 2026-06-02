@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0005, type: 3}
+  m_Name: Ridgeline
+  m_EditorClassIdentifier:
+  id: map_ridgeline
+  displayName: Ridgeline
+  frontLength: 40
+  rows: 3
+  team0StatueX: 0
+  team1StatueX: 40
+  terrain:
+  - kind: 1
+    x: 14
+    row: 0
+    width: 4
+  - kind: 1
+    x: 26
+    row: 2
+    width: 4
+  - kind: 3
+    x: 20
+    row: 1
+    width: 3
+  - kind: 4
+    x: 20
+    row: 0
+    width: 2
+  mines:
+  - x: 20
+    capacity: 4
+    yieldPerSec: 5
+    ownerTeam: -1
+  - x: 8
+    capacity: 2
+    yieldPerSec: 5
+    ownerTeam: -1
+  - x: 32
+    capacity: 2
+    yieldPerSec: 5
+    ownerTeam: -1

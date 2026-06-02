@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0001, type: 3}
+  m_Name: Ashen_Hexcaster
+  m_EditorClassIdentifier:
+  id: ashen_hexcaster
+  displayName: Hexcaster
+  faction: 1
+  role: 5
+  damageType: 5
+  armorClass: 1
+  maxHealth: 70
+  moveSpeed: 2.0
+  attackDamage: 9
+  attackRange: 4.5
+  attackInterval: 1.7
+  goldCost: 125
+  trainSeconds: 7.5
+  miningRatePerSec: 0

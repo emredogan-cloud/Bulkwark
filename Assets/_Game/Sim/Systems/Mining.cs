@@ -62,6 +62,10 @@ namespace Bulwark.Sim
     /// Surplus occupants on an over-capacity node are released so they re-scan (2a).
     /// </summary>
     [BurstCompile]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(SimPhaseBegin))]
+    [UpdateBefore(typeof(SimPhaseEnd))]
+    [UpdateBefore(typeof(TrainingSystem))] // slot 1 → 2: top up GoldStore before TrainingSystem charges it.
     public partial struct MiningSystem : ISystem
     {
         [BurstCompile]

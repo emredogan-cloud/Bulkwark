@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0003, type: 3}
+  m_Name: Arrow Storm
+  m_EditorClassIdentifier:
+  id: spell_arrowstorm
+  displayName: Arrow Storm
+  category: 0
+  cooldown: 12
+  charges: 1
+  telegraphTime: 1.2
+  targetShape: 1
+  radius: 4
+  magnitude: 18
+  duration: 0
+  appliesStatus: 0
+  summonUnitIndex: -1
+  synergyBonusVsStatus: 0
+  synergyMultiplier: 1.0
+  counterNote: Telegraphed zone — spread out and leave the marked area before it lands.

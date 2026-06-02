@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0004, type: 3}
+  m_Name: Ashen Warchief
+  m_EditorClassIdentifier:
+  id: cmd_ashen_warchief
+  displayName: Ashen Warchief
+  faction: 1
+  active: 2
+  activeCooldown: 40
+  activeMagnitude: 0.15
+  activeRadius: 5
+  activeDuration: 5
+  passive: 2
+  passiveMagnitude: 0.08
+  powerBudgetPct: 0.13
+  rankedNormalized: 1

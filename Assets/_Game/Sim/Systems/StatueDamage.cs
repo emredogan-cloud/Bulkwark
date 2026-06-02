@@ -45,6 +45,12 @@ namespace Bulwark.Sim
     /// Outcome when a statue is destroyed.
     /// </summary>
     [BurstCompile]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(SimPhaseBegin))]
+    [UpdateBefore(typeof(SimPhaseEnd))]
+    [UpdateAfter(typeof(CombatSystem))]         // drain the inbox AFTER Combat/Spell have appended this tick.
+    [UpdateAfter(typeof(StatusEffectSystem))]   // …and after the DoT tick has routed any statue DoT to the inbox.
+    [UpdateBefore(typeof(MatchFlowSystem))]     // MatchFlow finalizes the outcome StatueDamage may set.
     public partial struct StatueDamageSystem : ISystem
     {
         // PROVISIONAL readable-phase thresholds (fraction of MaxHealth). LSD/ADR-owned

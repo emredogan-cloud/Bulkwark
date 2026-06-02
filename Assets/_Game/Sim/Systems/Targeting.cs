@@ -35,7 +35,11 @@ namespace Bulwark.Sim
 {
     [BurstCompile]
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(InfluenceMapSystem))]
+    [UpdateAfter(typeof(SimPhaseBegin))]
+    [UpdateBefore(typeof(SimPhaseEnd))]
+    [UpdateAfter(typeof(InfluenceMapSystem))]   // reads this tick's rebuilt buckets.
+    [UpdateAfter(typeof(PossessControlSystem))] // honor manual target overrides before auto-acquire.
+    [UpdateBefore(typeof(BasicAISystem))]       // §13 1.5 commander builds on the resolved targeting.
     public partial struct TargetingSystem : ISystem
     {
         // Re-eval cadence + scoring knobs. These are TUNING SLOTS for targeting behaviour
@@ -145,6 +149,16 @@ namespace Bulwark.Sim
                 if (SystemAPI.HasComponent<ManualOrder>(e) &&
                     SystemAPI.GetComponent<ManualOrder>(e).HasAttack != 0)
                     continue;
+
+                // STUN GATE (Spell.cs EDIT 2): a Stunned unit CANNOT ACT — it holds its current
+                // target but does not spend cost re-acquiring (CombatSystem also skips its swing,
+                // EDIT 3, so the stun fully gates the unit). Burst-safe: StatusQuery is
+                // [BurstCompile]+pure; fetch the buffer by entity.
+                if (SystemAPI.HasBuffer<StatusEffect>(e))
+                {
+                    var sbuf = SystemAPI.GetBuffer<StatusEffect>(e);
+                    if (StatusQuery.IsStunned(in sbuf)) continue;
+                }
 
                 // Drop a dead/destroyed current target before throttling, so we re-acquire promptly.
                 // A valid target is one we can still locate (Position) AND damage: either a live

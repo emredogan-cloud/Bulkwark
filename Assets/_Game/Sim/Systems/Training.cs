@@ -83,22 +83,25 @@ namespace Bulwark.Sim
         public void OnUpdate(ref SystemState state)
         {
             float dt = SystemAPI.Time.DeltaTime;
-
-            // Catalog is required to resolve any order; if not yet baked, nothing to do.
-            if (!SystemAPI.HasSingleton<UnitCatalogTag>())
-                return;
-            Entity catalogEntity = SystemAPI.GetSingletonEntity<UnitCatalogTag>();
-            DynamicBuffer<UnitSpawnStats> catalog = SystemAPI.GetBuffer<UnitSpawnStats>(catalogEntity);
-            if (catalog.Length == 0)
-                return;
+            var em = state.EntityManager;
 
             var ecb = new EntityCommandBuffer(Allocator.Temp);
 
             // One queue per side (TrainQueueTag is the singleton-per-side that holds TrainOrders).
+            // PHASE-2 TWO-FACTION: each side resolves ITS OWN per-team unit catalog (Iron Pact vs
+            // Ashen Horde). TrainOrder.UnitIndex is side-relative (an index into that side's roster).
             foreach (var (queueTag, queueEntity) in
                      SystemAPI.Query<RefRO<TrainQueueTag>>().WithEntityAccess())
             {
                 int team = queueTag.ValueRO.Team;
+
+                // Resolve this side's catalog; if it isn't baked yet, skip this side this tick.
+                if (!UnitCatalog.TryGetForTeam(em, team, out Entity catalogEntity))
+                    continue;
+                DynamicBuffer<UnitSpawnStats> catalog = SystemAPI.GetBuffer<UnitSpawnStats>(catalogEntity);
+                if (catalog.Length == 0)
+                    continue;
+
                 DynamicBuffer<TrainOrder> orders = SystemAPI.GetBuffer<TrainOrder>(queueEntity);
                 if (orders.Length == 0)
                     continue;
@@ -206,69 +209,18 @@ namespace Bulwark.Sim
         }
 
         /// <summary>
-        /// Builds one combat unit from data. All numeric stats come from <paramref name="stats"/>
-        /// (Hard-Rule 4); the only literals are NEUTRAL factor slots (1.0), Cooldown=0, Level=0,
-        /// PerLevel=0 (no progression at P1), and the §13 P1.4 stickiness bias 1.2.
-        /// The catalog's sim-side mirror enums (DamageTypeId/ArmorClassId/RoleId) share identical
-        /// int values with the Bulwark.Data enums, so the (int) bridge cast is exact.
+        /// Builds one combat unit from data. EDIT 6 (integration DRY, §15): delegates to
+        /// <see cref="SpellSummon.SpawnFromCatalog"/> so TRAINED and SUMMONED units are built by
+        /// ONE archetype path (identical components: UnitTag/Team/Position/Row/Health/Movement/
+        /// AttackState/CombatProfile, neutral Positional/TerrainFactor/Difficulty slots, an empty
+        /// StatusEffect buffer, Targeting with the §13 P1.4 stickiness 1.2, and the Miner gating).
+        /// All numeric stats come from <paramref name="stats"/> (Hard-Rule 4). The sim-side mirror
+        /// enums share identical int values with the Bulwark.Data enums, so the cast is exact.
         /// </summary>
         private void SpawnUnit(ref EntityCommandBuffer ecb, in UnitSpawnStats stats,
                                int team, int row, float2 pos)
         {
-            Entity e = ecb.CreateEntity();
-
-            ecb.AddComponent<UnitTag>(e);
-            ecb.AddComponent(e, new Team { Id = team });
-            ecb.AddComponent(e, new Position { Value = pos });
-            ecb.AddComponent(e, new Row { Index = row });
-            ecb.AddComponent(e, new Health { Current = stats.MaxHealth, Max = stats.MaxHealth });
-            ecb.AddComponent(e, new Movement { Speed = stats.MoveSpeed });
-
-            // AttackState: Range/Damage(base)/Interval/Cooldown ONLY. Target is left at its
-            // default (Entity.Null) — TargetingSystem owns acquisition via Targeting.Current
-            // (shared contract: do NOT use AttackState.Target in Phase 1).
-            ecb.AddComponent(e, new AttackState
-            {
-                Range = stats.AttackRange,
-                Damage = stats.AttackDamage,
-                Interval = stats.AttackInterval,
-                Cooldown = 0f,
-            });
-
-            // §13 P1.4 modifier-chain identity. Level/PerLevel = 0 (progression is Phase 3).
-            // Bridge the sim-side mirror enums to the Bulwark.Data enums via exact int cast.
-            ecb.AddComponent(e, new CombatProfile
-            {
-                DamageType = (Bulwark.Data.DamageType)(int)stats.DamageType,
-                ArmorClass = (Bulwark.Data.ArmorClass)(int)stats.ArmorClass,
-                Level = 0,
-                PerLevel = 0f,
-            });
-
-            // Neutral factor slots (1.0). Positional/terrain geometry = Phase 2.1, forbidden now.
-            ecb.AddComponent(e, new Positional { Multiplier = 1f });
-            ecb.AddComponent(e, new TerrainFactor { Multiplier = 1f });
-
-            // Targeting seed: no current target; stickiness bias 1.2 (§13 P1.4).
-            ecb.AddComponent(e, new Targeting
-            {
-                Current = Entity.Null,
-                ReevalCooldown = 0f,
-                Stickiness = 1.2f,
-            });
-
-            // Role-specific: Miners also mine Gold (§11, §13 P1.1). Only the Miner role gets the
-            // mining components — the 3 combat roles do not. Gated on the catalog's RoleId enum.
-            if (stats.Role == RoleId.Miner)
-            {
-                ecb.AddComponent<MinerTag>(e);
-                ecb.AddComponent(e, new MiningState
-                {
-                    Mine = Entity.Null,
-                    Accum = 0f,
-                    RatePerSec = stats.MiningRatePerSec,
-                });
-            }
+            SpellSummon.SpawnFromCatalog(ref ecb, in stats, team, row, pos);
         }
     }
 
