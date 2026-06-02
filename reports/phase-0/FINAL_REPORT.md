@@ -59,12 +59,17 @@ files were modified; all changes are additive new files.
 ## 5. Validation Results
 | Gate | Result | Method / measured |
 |---|---|---|
-| 0.1 CI green; project opens | **BLOCKED** | CI authored; cannot run — no Unity license/runner/editor here (ADR-0-001-A). |
-| 0.2 ≥200 units stable frame | **BLOCKED** | No editor/device to measure frame-ms. Sim core authored; targeting is an O(N²) P0 spike explicitly flagged for §12 influence-map replacement before any scale claim. |
-| 0.3 SO edit reflects; RC overrides; literal fallback | **PARTIAL / BLOCKED** | Resolver precedence (RC→SO→literal) proven in pure-C# unit tests (3 cases). In-editor "designer edit changes live sim" half BLOCKED (no Unity). |
-| 0.4 auth+profile+config+analytics round-trip | **BLOCKED** | Seams + stubs authored; no BaaS project/credentials to round-trip (ADR-0-001-A). |
+| 0.1 CI green; project opens | **DEFERRED** | CI authored; needs a Unity-licensed runner to run green (ADR-0-001-A, reclassified per ADR-0-002). |
+| 0.2 ≥200 units stable frame | **DEFERRED** | No editor/device to measure frame-ms. Sim core authored; the Phase-0 spike's O(N²) scan is replaced by the influence-map targeting authored in Phase 1.4 before any scale claim. |
+| 0.3 SO edit reflects; RC overrides; literal fallback | **PARTIAL (PASS) / DEFERRED** | Resolver precedence (RC→SO→literal) proven in pure-C# unit tests (3 cases) — PASS. In-editor "designer edit changes live sim" half DEFERRED (no Unity). |
+| 0.4 auth+profile+config+analytics round-trip | **DEFERRED** | Seams + stubs authored; needs a BaaS project/credentials to round-trip (ADR-0-001-A). |
 
-No gate is asserted PASS. No measurement was fabricated.
+**Reclassification (ADR-0-002):** the runtime-blocked gates above are **DEFERRED**, not
+PASS — the deliverables are authored, but their acceptance tests depend on a runtime
+(Unity editor / device / BaaS) not present here and must be executed before any gate is
+asserted PASS. No gate is claimed green; no measurement was fabricated. Per the owner's
+conditional acceptance (ADR-0-002), authorization to proceed to Phase 1 is GRANTED with
+the deferred validations carried as standing validation debt.
 
 ## 6. Known Issues
 - Package versions in `manifest.json` and the editor version are best-effort pins;
@@ -98,6 +103,9 @@ No gate is asserted PASS. No measurement was fabricated.
 4. Rotate any credentials that appear in the tracked runtime logs.
 
 ## 10. Gate Status
-- **Exit Phase 0:** **BLOCKED** (0.1–0.4 not executable in this environment; see ADR-0-001).
-- **Authorization to proceed to Phase 1:** **WITHHELD** (per §13 — Phase 1 may not start
-  until Phase 0 exit gates pass; awaiting owner decision on ADR-0-001 + tooling).
+- **Exit Phase 0:** **CONDITIONALLY ACCEPTED** (ADR-0-002). Runtime-dependent sub-gates
+  (0.1, 0.2, 0.3-in-editor, 0.4) are **DEFERRED** with standing validation debt; the
+  pure-C# resolver-precedence portion of 0.3 is **PASS** (unit-tested). No gate fabricated.
+- **Authorization to proceed to Phase 1:** **GRANTED (conditional)** per owner decision
+  ADR-0-002 — conditional on the deferred validations being executed once Unity/device/
+  BaaS tooling exists.

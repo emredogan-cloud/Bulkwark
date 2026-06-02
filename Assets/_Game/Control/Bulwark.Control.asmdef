@@ -1,11 +1,11 @@
 {
-    "name": "Bulwark.Sim",
-    "rootNamespace": "Bulwark.Sim",
+    "name": "Bulwark.Control",
+    "rootNamespace": "Bulwark.Control",
     "references": [
         "Unity.Entities",
-        "Unity.Collections",
-        "Unity.Burst",
         "Unity.Mathematics",
+        "Unity.Collections",
+        "Bulwark.Sim",
         "Bulwark.Data"
     ],
     "includePlatforms": [],

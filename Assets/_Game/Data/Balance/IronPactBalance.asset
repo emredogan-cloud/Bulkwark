@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0002, type: 3}
+  m_Name: IronPactBalance
+  m_EditorClassIdentifier:
+  # type x armor 5x4 counter matrix (index = (damageType-1)*4 + (armorClass-1)).
+  # PROVISIONAL, LSD-owned. Only "basic counters" are non-1 at Phase 1 (§13 P1.4);
+  # the full matrix is Phase 2.2. Rows = damage {Melee,Pierce,Blunt,Fire,Poison};
+  # cols = armor {Light,Shielded,Heavy,Unarmored}.
+  counterMatrix:
+  - 1.25   # Melee  vs Light     (melee strong vs light/miner/crossbow)
+  - 0.75   # Melee  vs Shielded  (shields blunt melee)
+  - 1      # Melee  vs Heavy
+  - 1      # Melee  vs Unarmored
+  - 1      # Pierce vs Light
+  - 1.5    # Pierce vs Shielded  (crossbow pierces shields)
+  - 0.8    # Pierce vs Heavy     (heavy resists pierce)
+  - 1      # Pierce vs Unarmored
+  - 1      # Blunt  vs Light
+  - 1      # Blunt  vs Shielded
+  - 1      # Blunt  vs Heavy
+  - 1      # Blunt  vs Unarmored
+  - 1      # Fire   vs Light
+  - 1      # Fire   vs Shielded
+  - 1      # Fire   vs Heavy
+  - 1      # Fire   vs Unarmored
+  - 1      # Poison vs Light
+  - 1      # Poison vs Shielded
+  - 1      # Poison vs Heavy
+  - 1      # Poison vs Unarmored
+  units: []
+  spells: []
