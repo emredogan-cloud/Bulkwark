@@ -1,0 +1,56 @@
+# ============================================================================
+# BULWARK .gitignore
+# Two jobs: (1) standard Unity ignores; (2) HARD EXCLUSION of all reverse-
+# engineering / IP / PII artifacts that must NEVER be published (copyright +
+# privacy). These belong only to local educational analysis, not the repo.
+# NOTE: these paths are ALREADY tracked in history — see docs/adr/ADR-0-001;
+# .gitignore alone does not untrack them. Remediation requires a clean repo
+# or history rewrite (owner decision).
+# ============================================================================
+
+# ---- IP / copyright: Stick War: Legacy game binaries, decompiled code, assets ----
+apk/
+unpacked/
+jadx-out/
+report/il2cpp_dump/
+**/dump.cs
+**/global-metadata.dat
+**/*.apk
+**/*.so
+**/stringliteral.json
+**/script.json
+**/DummyDll/
+
+# ---- PII / secrets: runtime captures (device IDs, save state, API keys) ----
+runtime/
+**/*.log
+**/recovered_save_state*.txt
+
+# ---- Local RE tooling (large third-party binaries) ----
+tools/jadx/
+tools/jadx.zip
+tools/dotnet/
+tools/il2cppdumper/
+tools/apktool.jar
+tools/*.pkl
+report/recovered/
+
+# ============================================================================
+# Standard Unity
+# ============================================================================
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+*.csproj
+*.sln
+*.unityproj
+*.tmp
+*.user
+.vs/
+.idea/
+.gradle/
