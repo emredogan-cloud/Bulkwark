@@ -44,3 +44,4 @@ runtime are reported **DEFERRED** (see `docs/adr/ADR-0-002-...` and
 ## Engine
 Unity 6 LTS · URP-2D · Entities/DOTS (battle sim only) · Addressables · server-authoritative
 economy via managed BaaS for MVP.
+# Bulkwark
