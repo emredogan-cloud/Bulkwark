@@ -33,6 +33,14 @@ jobs:
     name: EditMode + PlayMode tests (compile validation)
     runs-on: ubuntu-latest
     steps:
+      # Reclaim disk: the now-large Library cache + the Unity image pull exhaust the
+      # default runner disk (docker exit 125). Same cleanup as the build job.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo docker image prune --all --force || true
+          df -h /
       - uses: actions/checkout@v4
         with: { lfs: true }
       - uses: actions/cache@v4
