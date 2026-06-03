@@ -60,12 +60,22 @@ namespace Bulwark.Sim
     public struct FormationMember : IComponentData { public int SquadId; public int Slot; }
 
     // ---------------- 2.4 Spells (draft-3, synergy, telegraph/counter) ----------------
+    /// <summary>
+    /// §6 ADR-2-002: who applied a status. Lets StatusQuery bound the COMMANDER-attributable
+    /// buff fraction to PowerBudgetPct (the §6 cap) independently of the SPELL-sourced tactical
+    /// layer (§5.3), so commander-vs-spell contributions are clamped separately and never merged.
+    /// Default 0 = Spell, so every existing/spell writer keeps its current meaning unchanged.
+    /// </summary>
+    public enum StatusSource : byte { Spell = 0, Commander = 1 }
+
     /// <summary>Active status effects on a unit (Chilled/Burning/Poisoned/Stunned/Hasted/Raged...).</summary>
     public struct StatusEffect : IBufferElementData
     {
-        public StatusKind Kind;   // Bulwark.Data.StatusKind
-        public float Remaining;   // seconds left
-        public float Magnitude;   // strength (DoT/sec, slow %, buff %)
+        public StatusKind Kind;     // Bulwark.Data.StatusKind
+        public float Remaining;     // seconds left
+        public float Magnitude;     // strength (DoT/sec, slow %, buff %)
+        public StatusSource Source; // §6 ADR-2-002: Spell (default 0) vs Commander — bounds the
+                                    // commander-attributable buff to PowerBudgetPct separately.
     }
 
     /// <summary>One of a side's 3 drafted spells + its runtime cooldown/charges.</summary>

@@ -102,14 +102,25 @@ namespace Bulwark.Sim
     /// StatusQuery.OutgoingDamageMultiplier and StatusQuery.MoveSpeedMultiplier as the readers
     /// that multiply commander-applied Raged/Hasted/etc. Those exact method names are provided
     /// below so the cross-file reference resolves.
+    ///
+    /// §6 ADR-2-002 (commander/spell buff-stacking): the buff multipliers are SPLIT BY SOURCE.
+    /// The no-budget overloads (MoveSpeedMultiplier(buf) / OutgoingDamageMultiplier(buf)) read
+    /// SPELL-sourced entries ONLY — the §5.3 tactical layer, intentionally stacking, uncapped by
+    /// §6. The commander contribution is a SEPARATE factor: CommanderBuffMultiplier(buf, kind,
+    /// budget) COMBINES all Commander-sourced entries of a kind and CLAMPS their extra fraction to
+    /// ≤ budget (PowerBudgetPct), so the commander-attributable buff on any unit is provably ≤
+    /// budget no matter how many commander entries (active + passive) exist. The budget-taking
+    /// overloads return spellMult × commanderClampedMult — the NET multiplier a call site applies.
     /// </summary>
     [BurstCompile]
     public static class StatusQuery
     {
         /// <summary>
-        /// Move-speed multiplier from statuses (§5.3 Control/Buff): Chilled SLOWS (×(1−mag),
-        /// floored at 0), Hasted SPEEDS (×(1+mag)). Other kinds are neutral here. Read by
-        /// MovementSystem (integration edit at EOF). Returns 1.0 on an empty/absent buffer.
+        /// SPELL-only move-speed multiplier from statuses (§5.3 Control/Buff): Chilled SLOWS
+        /// (×(1−mag), floored at 0), Hasted SPEEDS (×(1+mag)) — SPELL-sourced entries only (§6
+        /// ADR-2-002; the commander Hasted contribution is added separately, clamped). Other kinds
+        /// are neutral here. Returns 1.0 on an empty/absent buffer. (Chilled has no commander
+        /// source — only spells slow — so its full effect stays here.)
         /// </summary>
         public static float MoveSpeedMultiplier(in DynamicBuffer<StatusEffect> buf)
         {
@@ -118,6 +129,7 @@ namespace Bulwark.Sim
             {
                 StatusEffect se = buf[i];
                 if (se.Remaining <= 0f) continue; // expired-but-not-yet-swept entry: ignore.
+                if (se.Source != StatusSource.Spell) continue; // §6 ADR-2-002: spell layer only.
                 if (se.Kind == StatusKind.Chilled) mult *= math.max(0f, 1f - se.Magnitude);
                 else if (se.Kind == StatusKind.Hasted) mult *= (1f + se.Magnitude);
             }
@@ -125,10 +137,22 @@ namespace Bulwark.Sim
         }
 
         /// <summary>
-        /// OUTGOING damage multiplier from statuses (§5.3 Buff): Raged boosts outgoing damage
-        /// (×(1+mag)). Read by CombatSystem as an EXTRA chain factor (integration edit at EOF) —
-        /// it multiplies INTO the §4 chain, it does not fork it. This is the exact name
-        /// CommanderAbility.cs references. Returns 1.0 on an empty/absent buffer.
+        /// NET move-speed multiplier = SPELL-only mult × CLAMPED commander Hasted contribution
+        /// (§6 ADR-2-002). <paramref name="commanderBudget"/> is the unit-commander's
+        /// PowerBudgetPct: the combined Commander-sourced Hasted fraction is capped to ≤ that, so
+        /// the commander-attributable speed buff can never exceed the §6 budget while spell Hasted/
+        /// Chilled remain their own uncapped layer. Read by MovementSystem.
+        /// </summary>
+        public static float MoveSpeedMultiplier(in DynamicBuffer<StatusEffect> buf, float commanderBudget)
+            => MoveSpeedMultiplier(in buf)
+             * CommanderBuffMultiplier(in buf, StatusKind.Hasted, commanderBudget);
+
+        /// <summary>
+        /// SPELL-only OUTGOING damage multiplier from statuses (§5.3 Buff): Raged boosts outgoing
+        /// damage (×(1+mag)) — SPELL-sourced entries only (§6 ADR-2-002; the commander Raged
+        /// contribution is added separately, clamped to budget). Multiplies INTO the §4 chain, it
+        /// does not fork it. This is the exact name CommanderAbility.cs references. Returns 1.0 on
+        /// an empty/absent buffer.
         /// </summary>
         public static float OutgoingDamageMultiplier(in DynamicBuffer<StatusEffect> buf)
         {
@@ -137,9 +161,45 @@ namespace Bulwark.Sim
             {
                 StatusEffect se = buf[i];
                 if (se.Remaining <= 0f) continue;
+                if (se.Source != StatusSource.Spell) continue; // §6 ADR-2-002: spell layer only.
                 if (se.Kind == StatusKind.Raged) mult *= (1f + se.Magnitude);
             }
             return mult;
+        }
+
+        /// <summary>
+        /// NET outgoing-damage multiplier = SPELL-only mult × CLAMPED commander Raged contribution
+        /// (§6 ADR-2-002). <paramref name="commanderBudget"/> is the unit-commander's
+        /// PowerBudgetPct: the combined Commander-sourced Raged fraction is capped to ≤ that, so the
+        /// commander-attributable damage buff can never exceed the §6 budget while spell Raged
+        /// remains its own uncapped tactical layer. Read by CombatSystem (joins the §4 chain).
+        /// </summary>
+        public static float OutgoingDamageMultiplier(in DynamicBuffer<StatusEffect> buf, float commanderBudget)
+            => OutgoingDamageMultiplier(in buf)
+             * CommanderBuffMultiplier(in buf, StatusKind.Raged, commanderBudget);
+
+        /// <summary>
+        /// §6 ADR-2-002 — the COMMANDER-attributable buff multiplier for one <paramref name="kind"/>:
+        /// SUMS the magnitudes of ALL live Commander-sourced entries of that kind, CLAMPS the
+        /// combined extra fraction to ≤ <paramref name="budget"/> (PowerBudgetPct, the §6 cap), and
+        /// returns 1 + that clamped fraction. Thus commander active + passive of the same kind can
+        /// NEVER push the commander-attributable fraction past the budget on any unit (the §6
+        /// fairness leak is closed). Spell-sourced entries are ignored here (they are a separate,
+        /// uncapped layer). A non-positive budget ⇒ neutral 1.0. Pure/Burst-safe (read-only buffer).
+        /// </summary>
+        public static float CommanderBuffMultiplier(in DynamicBuffer<StatusEffect> buf,
+                                                    StatusKind kind, float budget)
+        {
+            if (budget <= 0f) return 1f; // no commander budget ⇒ no commander-attributable buff.
+            float sum = 0f;
+            for (int i = 0; i < buf.Length; i++)
+            {
+                StatusEffect se = buf[i];
+                if (se.Remaining <= 0f) continue;
+                if (se.Source != StatusSource.Commander || se.Kind != kind) continue;
+                sum += se.Magnitude; // COMBINE all commander entries of this kind (active + passive).
+            }
+            return 1f + math.min(sum, budget); // CLAMP the combined commander fraction to ≤ budget.
         }
 
         /// <summary>
@@ -198,26 +258,31 @@ namespace Bulwark.Sim
     {
         /// <summary>
         /// Refresh-or-add a single StatusEffect of <paramref name="kind"/> (§5.3). Policy
-        /// (IDENTICAL to CommanderAbility.cs's private copy so the two writers cannot diverge):
-        /// keep exactly ONE entry per kind; on a matching entry re-up it to max(Remaining) /
-        /// max(Magnitude) so a recast EXTENDS rather than stacks (no stacking exploit); otherwise
-        /// append a fresh entry. Burst-safe: only DynamicBuffer mutation + math.max. The caller
-        /// guarantees the buffer exists (creation/decay is owned by StatusEffectSystem).
+        /// (the ONE canonical add/refresh — CommanderAbility.cs now calls THIS, no private copy):
+        /// keep exactly ONE entry per (kind, <paramref name="source"/>); on a matching entry re-up
+        /// it to max(Remaining) / max(Magnitude) so a recast EXTENDS rather than stacks (no stacking
+        /// exploit); otherwise append a fresh entry. §6 ADR-2-002: entries are keyed by (Kind,
+        /// Source), so a Commander-sourced entry is NEVER merged with a Spell-sourced entry of the
+        /// same kind — the two layers stay SEPARATE so StatusQuery can bound the commander
+        /// contribution to PowerBudgetPct while spell buffs remain their own (uncapped) layer.
+        /// Burst-safe: only DynamicBuffer mutation + math.max. The caller guarantees the buffer
+        /// exists (creation/decay is owned by StatusEffectSystem).
         /// </summary>
         public static void AddOrRefreshStatus(ref DynamicBuffer<StatusEffect> buf, StatusKind kind,
-                                              float remaining, float magnitude)
+                                              float remaining, float magnitude,
+                                              StatusSource source = StatusSource.Spell)
         {
             if (kind == StatusKind.None) return; // None is never stored (it is the "no status" sentinel).
             for (int i = 0; i < buf.Length; i++)
             {
-                if (buf[i].Kind != kind) continue;
+                if (buf[i].Kind != kind || buf[i].Source != source) continue; // key by (Kind, Source).
                 StatusEffect se = buf[i];
                 se.Remaining = math.max(se.Remaining, remaining);
                 se.Magnitude = math.max(se.Magnitude, magnitude);
                 buf[i] = se;
                 return;
             }
-            buf.Add(new StatusEffect { Kind = kind, Remaining = remaining, Magnitude = magnitude });
+            buf.Add(new StatusEffect { Kind = kind, Remaining = remaining, Magnitude = magnitude, Source = source });
         }
     }
 
@@ -973,9 +1038,12 @@ namespace Bulwark.Sim
 //                 {
 //                     var sbuf = SystemAPI.GetBuffer<StatusEffect>(e);
 //                     if (Bulwark.Sim.StatusQuery.IsStunned(in sbuf)) continue; // stunned: no move this tick
-//                     spd *= Bulwark.Sim.StatusQuery.MoveSpeedMultiplier(in sbuf);
+//                     spd *= Bulwark.Sim.StatusQuery.MoveSpeedMultiplier(in sbuf, k_CommanderBudgetCeiling);
 //                 }
 //                 StepToward(ref pos.ValueRW.Value, targetPos, spd, dt, stopDist: atk.ValueRO.Range);
+//   §6 ADR-2-002: the budget-taking overload returns spellMult × CLAMPED commander-Hasted (≤ the
+//   §6 ceiling 0.15), so the commander-attributable speed buff is bounded; spell Chilled/Hasted
+//   stay their own uncapped §5.3 layer. (Applied in Combat.cs; this note reflects the wired form.)
 //   ALSO:     apply the SAME spd scaling + stun-halt to the manual MoveDestination branch above
 //             (so a stunned/chilled possessed unit is affected identically). NOTE: MovementSystem
 //             is [BurstCompile] and StatusQuery is [BurstCompile]+pure, so the calls are Burst-safe.
@@ -1006,13 +1074,16 @@ namespace Bulwark.Sim
 //                 if (SystemAPI.HasBuffer<StatusEffect>(e))
 //                 {
 //                     var sbufB = SystemAPI.GetBuffer<StatusEffect>(e);
-//                     ragedMult = Bulwark.Sim.StatusQuery.OutgoingDamageMultiplier(in sbufB);
+//                     ragedMult = Bulwark.Sim.StatusQuery.OutgoingDamageMultiplier(in sbufB, k_CommanderBudgetCeiling);
 //                 }
 //                 float dmg = rounded * typeArmor
 //                             * positional.ValueRO.Multiplier
 //                             * terrain.ValueRO.Multiplier
 //                             * difficulty.ValueRO.Multiplier
 //                             * ragedMult;
+//   §6 ADR-2-002: the budget-taking overload returns spellMult × CLAMPED commander-Raged (≤ the
+//   §6 ceiling 0.15), so the commander-attributable damage buff is bounded; spell Raged stays its
+//   own uncapped §5.3 layer. (Applied in Combat.cs; this note reflects the wired form.)
 //   (CombatSystem is [BurstCompile]; StatusQuery is Burst-safe so this is legal in the job.)
 //
 // ── EDIT 4: every unit carries a StatusEffect buffer (buffer-presence guarantee) ──

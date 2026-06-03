@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0006, type: 3}
+  m_Name: Level12
+  m_EditorClassIdentifier:
+  id: campaign_act1_12
+  displayName: 1-12  Attrition at the choke.
+  index: 12
+  mapId: map_ridgeline
+  enemyFaction: 1
+  enemyStartGold: 450
+  waves:
+  - unitIndex: 0
+    count: 6
+    spawnDelay: 0.0
+  - unitIndex: 1
+    count: 8
+    spawnDelay: 3.0
+  - unitIndex: 2
+    count: 5
+    spawnDelay: 6.0
+  - unitIndex: 3
+    count: 3
+    spawnDelay: 9.0
+  - unitIndex: 4
+    count: 2
+    spawnDelay: 12.0
+  - unitIndex: 5
+    count: 3
+    spawnDelay: 15.0
+  firstClearGemBase: 40
+  silverReward: 170
+  passXpReward: 22
+  starClearTimeSeconds: 140
+  narrativeBlurb: Attrition at the choke.

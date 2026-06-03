@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0006, type: 3}
+  m_Name: Level04
+  m_EditorClassIdentifier:
+  id: campaign_act1_04
+  displayName: 1-04  A hex creeps over the field.
+  index: 4
+  mapId: map_openfield
+  enemyFaction: 1
+  enemyStartGold: 250
+  waves:
+  - unitIndex: 0
+    count: 3
+    spawnDelay: 0.0
+  - unitIndex: 1
+    count: 4
+    spawnDelay: 3.0
+  - unitIndex: 2
+    count: 2
+    spawnDelay: 6.0
+  - unitIndex: 3
+    count: 1
+    spawnDelay: 9.0
+  firstClearGemBase: 20
+  silverReward: 90
+  passXpReward: 14
+  starClearTimeSeconds: 180
+  narrativeBlurb: A hex creeps over the field.

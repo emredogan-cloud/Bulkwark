@@ -126,6 +126,32 @@ namespace Bulwark.Bootstrap
         [Tooltip("Same-target stickiness bias applied to the current target's score (×1.2, §13 1.4).")]
         public float targetingStickiness = 1.2f;
 
+        // ---- RESOLVED-UPGRADE BAKE HOOK (Phase-3 integration C2 / §13 3.2) ----
+        // The meta layer's IBattleLauncher (Bootstrap) sets this BEFORE the world is built (it must be
+        // assigned prior to Start(), e.g. by the launcher on a disabled bootstrap that it then enables).
+        // It maps a PLAYER unit's content id (UnitDef.id) → the ADDITIVE per-stat deltas the SERVER-OWNED,
+        // cap-clamped upgrade levels produce (computed by the launcher via UpgradeMath.ResolveUpgradedStat,
+        // which clamps to maxLevel — so a delta here can NEVER exceed the HARD CAP, §3/§15 no-P2W). When a
+        // player unit's catalog stats are baked, the matching deltas are ADDED on top of the authored base
+        // (additive, mirroring the §4 base→modifier chain — never multiplicative). Null/absent ⇒ base stats
+        // (no upgrades). Only the PLAYER roster is upgraded; the AI/enemy roster is never altered here.
+        // This is the explicit hook the launcher writes; the launcher owns the Services-side math so this
+        // file keeps its Data/Sim-only dependency surface (no Bulwark.Services reference needed).
+        [System.NonSerialized] public IReadOnlyDictionary<string, UnitUpgradeDeltas> playerUpgradeDeltas;
+
+        /// <summary>
+        /// Additive, already-cap-clamped stat deltas for one player unit (content id), produced from the
+        /// server-owned upgrade levels by the meta launcher (C2). AttackSpeed is modeled as a REDUCTION of
+        /// AttackInterval (faster attacks) — see the bake. All fields default 0 (no upgrade).
+        /// </summary>
+        public struct UnitUpgradeDeltas
+        {
+            public float Health;          // + MaxHealth
+            public float Damage;          // + AttackDamage
+            public float MoveSpeed;       // + MoveSpeed
+            public float AttackIntervalDelta; // applied to AttackInterval (negative = faster; clamped > 0 at bake)
+        }
+
         private const int PlayerTeam = 0; // human (PlayerControlled)
         private const int AiTeam = 1;     // AI (AIControlled)
 
@@ -272,11 +298,13 @@ namespace Bulwark.Bootstrap
         /// </summary>
         private void BuildUnitCatalogs(EntityManager em)
         {
-            BuildOneCatalog(em, PlayerTeam, playerUnits, "UnitCatalog_Player");
-            BuildOneCatalog(em, AiTeam, aiUnits, "UnitCatalog_AI");
+            // ONLY the player roster receives the server-owned resolved-upgrade deltas (C2). The AI/enemy
+            // roster is always baked from base authored stats (no meta upgrades on the AI side, §3/§15).
+            BuildOneCatalog(em, PlayerTeam, playerUnits, "UnitCatalog_Player", applyUpgrades: true);
+            BuildOneCatalog(em, AiTeam, aiUnits, "UnitCatalog_AI", applyUpgrades: false);
         }
 
-        private void BuildOneCatalog(EntityManager em, int team, UnitDef[] roster, string name)
+        private void BuildOneCatalog(EntityManager em, int team, UnitDef[] roster, string name, bool applyUpgrades)
         {
             Entity catalog = em.CreateEntity();
             em.SetName(catalog, name);
@@ -287,17 +315,42 @@ namespace Bulwark.Bootstrap
             for (int i = 0; i < roster.Length; i++)
             {
                 UnitDef u = roster[i];
+
+                // Base authored stats (the ONLY balance source — §15). Deltas (if any) are ADDED below.
+                float maxHealth      = u.maxHealth;
+                float moveSpeed      = u.moveSpeed;
+                float attackDamage   = u.attackDamage;
+                float attackInterval = u.attackInterval;
+
+                // RESOLVED-UPGRADE BAKE (C2 / §13 3.2): fold the player's SERVER-OWNED, cap-clamped upgrade
+                // deltas onto the base. The deltas were produced by the meta launcher via UpgradeMath
+                // (clamped to maxLevel), so this can NEVER exceed the HARD CAP (§3/§15 no-P2W). Additive,
+                // mirroring the §4 base→modifier chain. AttackSpeed lowers the interval (faster attacks),
+                // floored just above 0 so a delta can never produce a non-positive interval.
+                if (applyUpgrades && playerUpgradeDeltas != null && !string.IsNullOrEmpty(u.id)
+                    && playerUpgradeDeltas.TryGetValue(u.id, out UnitUpgradeDeltas d))
+                {
+                    maxHealth      += d.Health;
+                    moveSpeed      += d.MoveSpeed;
+                    attackDamage   += d.Damage;
+                    attackInterval += d.AttackIntervalDelta;
+                    if (attackInterval < 0.01f) attackInterval = 0.01f; // never non-positive (sane swing window)
+                    if (maxHealth < 0f) maxHealth = 0f;
+                    if (moveSpeed < 0f) moveSpeed = 0f;
+                    if (attackDamage < 0f) attackDamage = 0f;
+                }
+
                 buf.Add(new UnitSpawnStats
                 {
                     // Data enums and sim-side mirror enums share identical int values; cast is exact.
                     DamageType       = (DamageTypeId)(int)u.damageType,
                     ArmorClass       = (ArmorClassId)(int)u.armorClass,
                     Role             = (RoleId)(int)u.role,
-                    MaxHealth        = u.maxHealth,
-                    MoveSpeed        = u.moveSpeed,
-                    AttackDamage     = u.attackDamage,
+                    MaxHealth        = maxHealth,
+                    MoveSpeed        = moveSpeed,
+                    AttackDamage     = attackDamage,
                     AttackRange      = u.attackRange,
-                    AttackInterval   = u.attackInterval,
+                    AttackInterval   = attackInterval,
                     GoldCost         = u.goldCost,
                     TrainSeconds     = u.trainSeconds,
                     MiningRatePerSec = u.miningRatePerSec,

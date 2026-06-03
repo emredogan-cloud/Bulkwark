@@ -22,11 +22,12 @@
 //     EVERY magnitude written (passive + active, per status) is clamped to that fraction.
 //     RankedNormalized==1 makes the clamp authoritative regardless of authored magnitude
 //     (ranked-fairness stub, §16 honored by the sim).
-//     NOTE (see integrationNotes): the per-entry clamp bounds THIS system's written entry;
-//     StatusQuery.OutgoingDamageMultiplier/MoveSpeedMultiplier multiply EVERY matching entry,
-//     so a commander Raged + a spell-applied Raged STACK multiplicatively. The airtight §6
-//     guarantee on the COMBINED commander-attributable fraction is an integration decision
-//     (per-entry vs per-unit-from-commander) — documented, not silently assumed.
+//     §6 ADR-2-002 (RESOLVED): the per-entry clamp here bounds each WRITTEN entry; additionally
+//     every commander write is tagged StatusSource.Commander, and StatusQuery.CommanderBuffMultiplier
+//     COMBINES all commander-sourced entries of a kind and CLAMPS their fraction to ≤ budget. So the
+//     COMBINED commander-attributable fraction on any unit is provably ≤ PowerBudgetPct (active +
+//     passive can never exceed it), while a spell-applied Raged/Hasted is a SEPARATE entry on its
+//     own uncapped §5.3 layer — no multiplicative §6 leak. (Was an open integration decision.)
 //   * §15.6 no invented balance: magnitudes/radius/cooldown/duration come from CommanderRuntime
 //     (baked from CommanderDef DATA). The ONLY literal here is the canon §6 cap (0.15) and a
 //     control epsilon for the passive refresh window (NOT a balance/power value).
@@ -197,10 +198,12 @@ namespace Bulwark.Sim
                 if (!em.HasBuffer<StatusEffect>(e)) continue;
                 var buf = em.GetBuffer<StatusEffect>(e);
 
-                // Refresh-or-add with the SAME policy as Spell.cs::AddOrRefreshStatus (single
-                // entry per kind; max(remaining), max(magnitude)) so the two writers never drift.
-                AddOrRefreshStatus(ref buf, primary, duration, buffMag);
-                AddOrRefreshStatus(ref buf, secondary, duration, buffMag);
+                // Refresh-or-add via the ONE canonical Spell.cs::AddOrRefreshStatus (single entry
+                // per (kind, source); max(remaining), max(magnitude)) so the two writers never
+                // drift. §6 ADR-2-002: tag these COMMANDER-sourced so StatusQuery bounds their
+                // COMBINED contribution to budget (PowerBudgetPct) separately from spell buffs.
+                Spell.AddOrRefreshStatus(ref buf, primary, duration, buffMag, StatusSource.Commander);
+                Spell.AddOrRefreshStatus(ref buf, secondary, duration, buffMag, StatusSource.Commander);
             }
         }
 
@@ -248,40 +251,23 @@ namespace Bulwark.Sim
                 var buf = em.GetBuffer<StatusEffect>(e);
 
                 // Standing buff: refresh to the short window every cadence so it reads as always-on
-                // yet self-expires when the commander stops. SAME refresh policy as the active /
-                // Spell.cs (single entry per kind; max(remaining), max(magnitude)). Because buffMag
-                // is the clamped value and AddOrRefreshStatus takes max(magnitude), the standing
-                // entry settles at the clamped magnitude and the short window keeps Remaining from
-                // exceeding k_PassiveWindow once the commander stops refreshing it.
-                AddOrRefreshStatus(ref buf, kind, k_PassiveWindow, buffMag);
+                // yet self-expires when the commander stops. SAME canonical refresh policy as the
+                // active / Spell.cs (single entry per (kind, source); max(remaining), max(magnitude)).
+                // Because buffMag is the clamped value and AddOrRefreshStatus takes max(magnitude),
+                // the standing entry settles at the clamped magnitude and the short window keeps
+                // Remaining from exceeding k_PassiveWindow once the commander stops refreshing it.
+                // §6 ADR-2-002: COMMANDER-sourced (clamped to budget with the active by StatusQuery).
+                Spell.AddOrRefreshStatus(ref buf, kind, k_PassiveWindow, buffMag, StatusSource.Commander);
             }
         }
 
         // =========================================================================
-        // StatusEffect buffer helper (refresh-or-add; single entry per kind)
+        // StatusEffect buffer writes go through Spell.cs::AddOrRefreshStatus (the ONE canonical
+        // policy). §6 ADR-2-002: this system's private copy was REMOVED so there is a single
+        // writer policy — commander writes pass StatusSource.Commander; entries are keyed by
+        // (kind, source) so commander and spell buffs of the same kind stay separate and the
+        // commander contribution is bounded to budget by StatusQuery. (§15 DRY.)
         // =========================================================================
-        /// <summary>
-        /// Refresh-or-add a single StatusEffect of <paramref name="kind"/>. Policy is IDENTICAL
-        /// to Spell.cs::AddOrRefreshStatus (the canonical add/refresh): keep ONE entry per kind,
-        /// re-up it to max(remaining) / max(magnitude) so a recast extends rather than stacks,
-        /// otherwise add a fresh entry. Kept in lockstep with Spell.cs so the two writers that
-        /// share this buffer cannot diverge (§15 DRY). The buffer is assumed present (caller
-        /// guards with HasBuffer; buffer creation/decay is owned by Spell.cs — see integrationNotes).
-        /// </summary>
-        private static void AddOrRefreshStatus(ref DynamicBuffer<StatusEffect> buf, StatusKind kind,
-                                               float duration, float magnitude)
-        {
-            for (int i = 0; i < buf.Length; i++)
-            {
-                if (buf[i].Kind != kind) continue;
-                StatusEffect se = buf[i];
-                se.Remaining = math.max(se.Remaining, duration);
-                se.Magnitude = math.max(se.Magnitude, magnitude);
-                buf[i] = se;
-                return;
-            }
-            buf.Add(new StatusEffect { Kind = kind, Remaining = duration, Magnitude = magnitude });
-        }
 
         /// <summary>Find the side's spawn anchor (§11 single-front "home") for the active radius gate.</summary>
         private static bool TryGetTeamSpawn(ref SystemState state, int team, out float2 pos)

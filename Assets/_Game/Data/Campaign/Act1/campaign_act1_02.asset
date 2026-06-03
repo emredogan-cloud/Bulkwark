@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0006, type: 3}
+  m_Name: Level02
+  m_EditorClassIdentifier:
+  id: campaign_act1_02
+  displayName: 1-02  Raiders test the line.
+  index: 2
+  mapId: map_chokepass
+  enemyFaction: 1
+  enemyStartGold: 200
+  waves:
+  - unitIndex: 0
+    count: 2
+    spawnDelay: 0.0
+  - unitIndex: 1
+    count: 3
+    spawnDelay: 3.0
+  firstClearGemBase: 20
+  silverReward: 70
+  passXpReward: 12
+  starClearTimeSeconds: 190
+  narrativeBlurb: Raiders test the line.

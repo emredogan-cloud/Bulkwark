@@ -51,6 +51,16 @@ namespace Bulwark.Sim
         // balance value — it is the control-handoff arrival tolerance (§13 P1.3, DEFERRED feel).
         private const float k_ManualArriveRadius = 1e-3f;
 
+        // §6 ADR-2-002 commander-buff clamp ceiling. StatusQuery clamps the COMBINED commander-
+        // sourced buff fraction to this when reading move/damage multipliers. We use the canon §6
+        // ceiling (0.15) — the SAME hard cap CommanderAbilitySystem.k_PowerBudgetCeiling clamps
+        // PowerBudgetPct (and thus every commander magnitude) to. The per-unit CommanderRuntime is
+        // a per-TEAM singleton not carried on the unit on the Burst hot path; clamping the combined
+        // commander fraction to this ceiling guarantees the commander-attributable buff ≤ the §6
+        // budget regardless. Spell buffs are read separately (uncapped §5.3 layer). This is the one
+        // allowed literal (canon-stated §6 cap, cited) — NOT an invented balance value (§15.6).
+        private const float k_CommanderBudgetCeiling = 0.15f; // §6 commander power cap (ADR-2-002).
+
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
@@ -73,7 +83,9 @@ namespace Bulwark.Sim
                 {
                     var sbuf = SystemAPI.GetBuffer<StatusEffect>(e);
                     if (StatusQuery.IsStunned(in sbuf)) stunned = true;          // EDIT 1: stunned ⇒ no move
-                    else spd *= StatusQuery.MoveSpeedMultiplier(in sbuf);        // EDIT 1: Chilled/Hasted
+                    // EDIT 1 + §6 ADR-2-002: spell Chilled/Hasted (uncapped §5.3 layer) × the
+                    // CLAMPED commander Hasted contribution (≤ k_CommanderBudgetCeiling) → net speed.
+                    else spd *= StatusQuery.MoveSpeedMultiplier(in sbuf, k_CommanderBudgetCeiling);
                 }
                 // A2 CHOKE: scale by the occupied feature's MoveMult (Choke < 1; open/absent = 1).
                 if (!stunned) spd *= ResolveOccupiedMoveMult(ref state, e);
@@ -162,6 +174,13 @@ namespace Bulwark.Sim
     [UpdateAfter(typeof(CommanderAbilitySystem))]   // commander Raged/Hasted buffs felt by this tick's combat.
     public partial struct CombatSystem : ISystem
     {
+        // §6 ADR-2-002 commander-buff clamp ceiling (mirrors MovementSystem.k_CommanderBudgetCeiling
+        // and CommanderAbilitySystem.k_PowerBudgetCeiling): StatusQuery clamps the COMBINED
+        // commander-sourced Raged fraction to this when computing the outgoing-damage multiplier, so
+        // the commander-attributable damage buff is provably ≤ the canon §6 cap (0.15) while spell
+        // Raged stays its own uncapped §5.3 layer. The one allowed literal (canon §6 cap, cited).
+        private const float k_CommanderBudgetCeiling = 0.15f; // §6 commander power cap (ADR-2-002).
+
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
@@ -219,11 +238,13 @@ namespace Bulwark.Sim
 
                 // Raged (Spell.cs EDIT 3): outgoing-status factor multiplies INTO the §4 chain
                 // (it joins the SAME chain — no fork). Neutral 1.0 on an empty/absent buffer.
+                // §6 ADR-2-002: net = spell Raged (uncapped §5.3 layer) × the CLAMPED commander Raged
+                // contribution (≤ k_CommanderBudgetCeiling), so commander damage buff ≤ §6 budget.
                 float ragedMult = 1f;
                 if (SystemAPI.HasBuffer<StatusEffect>(e))
                 {
                     var sbufRaged = SystemAPI.GetBuffer<StatusEffect>(e);
-                    ragedMult = StatusQuery.OutgoingDamageMultiplier(in sbufRaged);
+                    ragedMult = StatusQuery.OutgoingDamageMultiplier(in sbufRaged, k_CommanderBudgetCeiling);
                 }
 
                 // TERRAIN COVER (A1, §4/§11): the §4 chain's attacker-side factors are

@@ -1,0 +1,162 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0007, type: 3}
+  m_Name: UpgradesConfig
+  m_EditorClassIdentifier:
+  tracks:
+  - unitId: ironpact_miner
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ironpact_miner
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ironpact_shieldman
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ironpact_shieldman
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ironpact_legionary
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ironpact_legionary
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ironpact_crossbow
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ironpact_crossbow
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ironpact_battlemage
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ironpact_battlemage
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ironpact_ironclad
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ironpact_ironclad
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ashen_miner
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ashen_miner
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ashen_raider
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ashen_raider
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ashen_slinger
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ashen_slinger
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ashen_hexcaster
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ashen_hexcaster
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ashen_razorbeast
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ashen_razorbeast
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  - unitId: ashen_houndmaster
+    stat: 0
+    maxLevel: 5
+    baseCostSilver: 120
+    costGrowth: 1.6
+    deltaPerLevel: 8
+  - unitId: ashen_houndmaster
+    stat: 1
+    maxLevel: 5
+    baseCostSilver: 150
+    costGrowth: 1.6
+    deltaPerLevel: 1.5
+  commanderMaxLevel: 10
+  commanderBaseCostSilver: 200
+  commanderCostGrowth: 1.5

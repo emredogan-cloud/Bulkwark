@@ -1,13 +1,8 @@
 {
-    "name": "Bulwark.Bootstrap",
-    "rootNamespace": "Bulwark.Bootstrap",
+    "name": "Bulwark.Game.Modes",
+    "rootNamespace": "Bulwark.Game.Modes",
     "references": [
-        "Unity.Entities",
-        "Unity.Collections",
-        "Unity.Mathematics",
-        "Bulwark.Sim",
         "Bulwark.Data",
-        "Bulwark.Game.Modes",
         "Bulwark.Services"
     ],
     "includePlatforms": [],

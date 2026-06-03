@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0008, type: 3}
+  m_Name: EconomyConfig
+  m_EditorClassIdentifier:
+  gemDiminishDecrement: 5
+  gemDiminishFloor: 5
+  silverPerEndlessWave: 8
+  passXpPerBattle: 10
+  silverPerLadderWin: 40
+  gemsPerLadderSeasonReward: 50
+  endlessBaseWaveStrength: 100
+  endlessGrowthPerWave: 0.12
+  endlessDirectorBand: 0.15
+  ladderMaxPlausibleDps: 1000
+  ladderMaxUnitsPerBattle: 60
