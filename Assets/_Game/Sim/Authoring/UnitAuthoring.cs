@@ -20,7 +20,9 @@ namespace Bulwark.Sim.Authoring
         public Vector2 spawnPosition;
         // public UnitDef unit;  // wired in Phase 1 when content/data populate; schema-only at P0.
 
-        public class Baker : Baker<UnitAuthoring>
+        // Named UnitAuthoringBaker (not 'Baker') so it does not shadow Unity.Entities.Baker<T>
+        // — a nested class named 'Baker' makes 'Baker<UnitAuthoring>' resolve to itself (CS0308).
+        public class UnitAuthoringBaker : Baker<UnitAuthoring>
         {
             public override void Bake(UnitAuthoring authoring)
             {

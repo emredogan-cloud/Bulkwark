@@ -60,6 +60,14 @@ jobs:
     runs-on: ubuntu-latest
     # Independent of `test` so build/compile logs are produced even if tests fail (more evidence).
     steps:
+      # The Unity Android editor image (~10GB) exhausts the default runner disk during pull
+      # (docker exit 125). Reclaim ~25GB of preinstalled tooling first.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo docker image prune --all --force || true
+          df -h /
       - uses: actions/checkout@v4
         with: { lfs: true }
       - uses: actions/cache@v4
