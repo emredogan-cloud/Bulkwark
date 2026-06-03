@@ -1,0 +1,20 @@
+{
+    "name": "Bulwark.Services.PlayFab",
+    "rootNamespace": "Bulwark.Services.Integrations.PlayFab",
+    "references": [
+        "Bulwark.Services",
+        "Bulwark.Data",
+        "PlayFabSDK"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "PLAYFAB_SDK"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,87 @@
+# BULWARK — primary CI/CD (Phase-3 infra bring-up, §12 CI/CD canon).
+# Compile on every push → run tests → produce an Android build → publish artifacts, compile
+# logs, and test results. Uses game-ci (https://game.ci). Supersedes the Phase-0 ci.yml.
+#
+# Secrets (provisioned by the owner in this repo's GitHub Secrets):
+#   UNITY_LICENSE (preferred personal-license .ulf) OR UNITY_EMAIL + UNITY_PASSWORD (+ serial),
+#   PLAYFAB_SECRET_KEY (server-side/integration steps; the Unity build itself does not need it).
+#
+# NOTE: the PlayFab adapters are behind the PLAYFAB_SDK define-constrained asmdef and are EXCLUDED
+# from this build (no SDK installed) — they cannot affect compilation here. This pipeline validates
+# the Phase 0–3 codebase compiling + building; PlayFab live validation is a separate integration step.
+
+name: main
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: EditMode + PlayMode tests (compile validation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { lfs: true }
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-
+      - uses: game-ci/unity-test-runner@v4
+        id: tests
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: .
+          testMode: all
+          artifactsPath: test-results
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: test-results, path: test-results }
+      - name: Publish test logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: test-logs, path: "**/*.log", if-no-files-found: ignore }
+
+  build:
+    name: Android build
+    runs-on: ubuntu-latest
+    # Independent of `test` so build/compile logs are produced even if tests fail (more evidence).
+    steps:
+      - uses: actions/checkout@v4
+        with: { lfs: true }
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-
+      - uses: game-ci/unity-builder@v4
+        id: builder
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: .
+          targetPlatform: Android
+          buildName: BULWARK
+      - name: Publish Android build artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: android-build, path: build, if-no-files-found: warn }
+      - name: Publish build logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: build-logs, path: "**/*.log", if-no-files-found: ignore }
