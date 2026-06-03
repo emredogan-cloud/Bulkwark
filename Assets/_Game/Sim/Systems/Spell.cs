@@ -791,8 +791,10 @@ namespace Bulwark.Sim
         /// <summary>Armor class of an entity if it has a CombatProfile; Unset (⇒ neutral 1.0) otherwise.</summary>
         private static Bulwark.Data.ArmorClass ResolveArmor(ref SystemState state, Entity e)
         {
-            if (SystemAPI.HasComponent<CombatProfile>(e))
-                return SystemAPI.GetComponent<CombatProfile>(e).ArmorClass;
+            // CS0120 fix: `static` helper cannot access the source-generated instance fields
+            // SystemAPI.* expands to; use the behavior-identical EntityManager reads off `state`.
+            if (state.EntityManager.HasComponent<CombatProfile>(e))
+                return state.EntityManager.GetComponentData<CombatProfile>(e).ArmorClass;
             return Bulwark.Data.ArmorClass.Unset;
         }
 
@@ -958,14 +960,19 @@ namespace Bulwark.Sim
                               .WithAll<UnitTag>()
                               .WithEntityAccess())
             {
-                if (buf.Length == 0) continue;
+                // CS1654 fix: `buf` is the foreach iteration variable, so its mutating members
+                // (RemoveAtSwapBack / indexer-set below) cannot be called directly. Copy it to a
+                // mutable local — DynamicBuffer<T> is a handle struct, so `b` aliases the SAME
+                // underlying buffer memory; mutations through `b` are identical to mutating `buf`.
+                var b = buf;
+                if (b.Length == 0) continue;
 
                 float dotThisTick = 0f; // accumulated Burning/Poisoned damage this tick (per-sec × dt)
 
                 // Walk back-to-front so RemoveAtSwapBack does not skip elements.
-                for (int i = buf.Length - 1; i >= 0; i--)
+                for (int i = b.Length - 1; i >= 0; i--)
                 {
-                    StatusEffect se = buf[i];
+                    StatusEffect se = b[i];
 
                     // DoT statuses bleed Health at Magnitude/sec while live (§5.3 Burning/Poisoned).
                     if ((se.Kind == StatusKind.Burning || se.Kind == StatusKind.Poisoned) &&
@@ -976,9 +983,9 @@ namespace Bulwark.Sim
 
                     se.Remaining -= dt;
                     if (se.Remaining <= 0f)
-                        buf.RemoveAtSwapBack(i); // expired — compact out.
+                        b.RemoveAtSwapBack(i); // expired — compact out.
                     else
-                        buf[i] = se;
+                        b[i] = se;
                 }
 
                 if (dotThisTick > 0f)

@@ -153,7 +153,12 @@ namespace Bulwark.Sim
         /// Both apply as time-limited StatusEffect(s) for <paramref name="duration"/>; every
         /// magnitude is clamped to <paramref name="budget"/> (§6). Single linear ally pass (§12).
         /// </summary>
-        private static void ApplyActive(ref SystemState state, ref EntityManager em, int team,
+        // CS0120 fix: NON-static instance method. This helper uses SystemAPI.Query (line ~185),
+        // which the Entities source generator rewrites into INSTANCE fields (__query_*/__TypeHandle)
+        // on the system struct — a `static` method cannot reach them. Making it an instance method
+        // (called via `this` from the instance OnUpdate) lets the generator bind those fields
+        // correctly. Behavior is unchanged: same query, same single linear ally pass (§12).
+        private void ApplyActive(ref SystemState state, ref EntityManager em, int team,
                                         CommanderActiveKind active, float magnitude, float radius,
                                         float duration, float budget)
         {
@@ -216,7 +221,9 @@ namespace Bulwark.Sim
         /// Both are refreshed each cadence so they read as always-on yet self-expire when the
         /// commander stops (match end / removed). Magnitude clamped to budget (§6).
         /// </summary>
-        private static void ApplyPassive(ref SystemState state, ref EntityManager em, int team,
+        // CS0120 fix: NON-static instance method (uses SystemAPI.Query at line ~237; same
+        // source-generator reasoning as ApplyActive). Called via `this` from OnUpdate; unchanged behavior.
+        private void ApplyPassive(ref SystemState state, ref EntityManager em, int team,
                                          CommanderPassiveKind passive, float magnitude, float budget)
         {
             if (passive == CommanderPassiveKind.None) return;
@@ -270,7 +277,9 @@ namespace Bulwark.Sim
         // =========================================================================
 
         /// <summary>Find the side's spawn anchor (§11 single-front "home") for the active radius gate.</summary>
-        private static bool TryGetTeamSpawn(ref SystemState state, int team, out float2 pos)
+        // CS0120 fix: NON-static instance method (uses SystemAPI.Query at line ~275; same
+        // source-generator reasoning as ApplyActive). Called from the now-instance ApplyActive.
+        private bool TryGetTeamSpawn(ref SystemState state, int team, out float2 pos)
         {
             foreach (var sp in SystemAPI.Query<RefRO<TeamSpawnPoint>>())
             {

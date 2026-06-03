@@ -165,7 +165,11 @@ namespace Bulwark.Sim
             for (int i = 0; i < systems.Length; i++)
             {
                 ref SystemState s = ref world.Unmanaged.ResolveSystemStateRef(systems[i]);
-                FixedString128Bytes name = s.DebugName; // unmanaged FixedString of the system type name
+                // CS0029 fix: SystemState.DebugName is a NativeText.ReadOnly, not a FixedString.
+                // Copy it into a FixedString128Bytes (truncating is a non-issue — a system type
+                // name is far under 128 bytes) so TypeNameEquals can scan it byte-for-byte as before.
+                var name = new FixedString128Bytes();
+                name.CopyFromTruncated(s.DebugName.ToString()); // unmanaged FixedString of the system type name
                 for (int t = 0; t < _freezeTargets.Length; t++)
                 {
                     if (TypeNameEquals(name, _freezeTargets[t]))

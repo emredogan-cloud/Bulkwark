@@ -151,10 +151,14 @@ namespace Bulwark.Sim
         /// </summary>
         private static float ResolveOccupiedMoveMult(ref SystemState state, Entity unit)
         {
-            if (!SystemAPI.HasComponent<TerrainOccupancy>(unit)) return 1f;
-            Entity feature = SystemAPI.GetComponent<TerrainOccupancy>(unit).Feature;
-            if (feature == Entity.Null || !SystemAPI.HasComponent<TerrainFeature>(feature)) return 1f;
-            float mv = SystemAPI.GetComponent<TerrainFeature>(feature).MoveMult;
+            // CS0120 fix: this is a `static` helper, so it cannot touch the source-generated
+            // instance __TypeHandle/__query fields that SystemAPI.* expands to. Use the
+            // behavior-identical EntityManager component reads off the `ref SystemState` we
+            // already receive (pure reads — same data, no generator involvement).
+            if (!state.EntityManager.HasComponent<TerrainOccupancy>(unit)) return 1f;
+            Entity feature = state.EntityManager.GetComponentData<TerrainOccupancy>(unit).Feature;
+            if (feature == Entity.Null || !state.EntityManager.HasComponent<TerrainFeature>(feature)) return 1f;
+            float mv = state.EntityManager.GetComponentData<TerrainFeature>(feature).MoveMult;
             return mv > 0f ? mv : 1f;
         }
     }
@@ -300,8 +304,10 @@ namespace Bulwark.Sim
         /// <summary>Armor class of the target if it has a CombatProfile; Unset (⇒ 1.0) otherwise.</summary>
         private static Bulwark.Data.ArmorClass ResolveTargetArmor(ref SystemState state, Entity target)
         {
-            if (SystemAPI.HasComponent<CombatProfile>(target))
-                return SystemAPI.GetComponent<CombatProfile>(target).ArmorClass;
+            // CS0120 fix: `static` helper — replace SystemAPI.* (which expands to instance
+            // generator fields) with the behavior-identical EntityManager reads off `state`.
+            if (state.EntityManager.HasComponent<CombatProfile>(target))
+                return state.EntityManager.GetComponentData<CombatProfile>(target).ArmorClass;
             return Bulwark.Data.ArmorClass.Unset;
         }
 
@@ -315,10 +321,12 @@ namespace Bulwark.Sim
         /// </summary>
         private static float ResolveTargetCover(ref SystemState state, Entity target)
         {
-            if (!SystemAPI.HasComponent<TerrainOccupancy>(target)) return 1f;
-            Entity feature = SystemAPI.GetComponent<TerrainOccupancy>(target).Feature;
-            if (feature == Entity.Null || !SystemAPI.HasComponent<TerrainFeature>(feature)) return 1f;
-            float def = SystemAPI.GetComponent<TerrainFeature>(feature).DefenseMult;
+            // CS0120 fix: `static` helper — replace SystemAPI.* (which expands to instance
+            // generator fields) with the behavior-identical EntityManager reads off `state`.
+            if (!state.EntityManager.HasComponent<TerrainOccupancy>(target)) return 1f;
+            Entity feature = state.EntityManager.GetComponentData<TerrainOccupancy>(target).Feature;
+            if (feature == Entity.Null || !state.EntityManager.HasComponent<TerrainFeature>(feature)) return 1f;
+            float def = state.EntityManager.GetComponentData<TerrainFeature>(feature).DefenseMult;
             return def > 0f ? def : 1f;
         }
     }
