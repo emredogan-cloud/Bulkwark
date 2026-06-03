@@ -25,6 +25,9 @@ report/il2cpp_dump/
 runtime/
 **/*.log
 **/recovered_save_state*.txt
+# ---- Unity license files (NEVER commit) ----
+*.ulf
+Unity_lic.ulf
 
 # ---- Local RE tooling (large third-party binaries) ----
 tools/jadx/
