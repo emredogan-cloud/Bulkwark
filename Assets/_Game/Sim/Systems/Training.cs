@@ -122,7 +122,7 @@ namespace Bulwark.Sim
                 // ---- Step 1: payment gate (LOCAL battle Gold, §13 P1.1) ----
                 if (head.Paid == 0)
                 {
-                    if (!TryDeductGold(team, stats.GoldCost))
+                    if (!TryDeductGold(ref state, team, stats.GoldCost))
                     {
                         // Insufficient Gold: stall the head, leave Remaining untouched. Retried
                         // next tick once mining (§13 P1.1) tops up the GoldStore.
@@ -145,8 +145,8 @@ namespace Bulwark.Sim
                 }
 
                 // ---- Step 3: deploy (spawn) + pop the head ----
-                int row = NextRow(ref ecb, queueEntity);
-                SpawnUnit(ref ecb, in stats, team, row, ResolveSpawnPos(team));
+                int row = NextRow(ref state, ref ecb, queueEntity);
+                SpawnUnit(ref ecb, in stats, team, row, ResolveSpawnPos(ref state, team));
                 orders.RemoveAt(0);
             }
 
@@ -157,9 +157,10 @@ namespace Bulwark.Sim
         /// <summary>
         /// Deducts <paramref name="cost"/> from the matching side's GoldStore if affordable.
         /// Returns false (no mutation) when the side cannot pay or has no GoldStore yet.
-        /// Uses SystemAPI exclusively — no SystemState needed (review: dropped unused param).
+        /// Takes <c>ref SystemState state</c> because it uses SystemAPI.Query: the Entities source
+        /// generator needs the state handle to update query handles + complete dependencies (SGSG0002).
         /// </summary>
-        private bool TryDeductGold(int team, int cost)
+        private bool TryDeductGold(ref SystemState state, int team, int cost)
         {
             if (cost <= 0)
                 return true; // free unit (e.g. starting Miner if goldCost=0) — nothing to deduct.
@@ -182,7 +183,7 @@ namespace Bulwark.Sim
         /// here: when absent, we deploy into row 0 and ADD a RowCursor (via the ECB) seeded to 1,
         /// so every subsequent spawn reads a real component and advances 1→2→0→1… across rows.
         /// </summary>
-        private int NextRow(ref EntityCommandBuffer ecb, Entity queueEntity)
+        private int NextRow(ref SystemState state, ref EntityCommandBuffer ecb, Entity queueEntity)
         {
             if (SystemAPI.HasComponent<RowCursor>(queueEntity))
             {
@@ -198,7 +199,7 @@ namespace Bulwark.Sim
         }
 
         /// <summary>Looks up this side's TeamSpawnPoint; falls back to origin if none baked.</summary>
-        private float2 ResolveSpawnPos(int team)
+        private float2 ResolveSpawnPos(ref SystemState state, int team)
         {
             foreach (var sp in SystemAPI.Query<RefRO<TeamSpawnPoint>>())
             {

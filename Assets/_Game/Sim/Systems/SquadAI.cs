@@ -176,7 +176,7 @@ namespace Bulwark.Sim
                 SquadSignals sig = GatherSquadSignals(ref state, in squad);
 
                 // ---- Read the commander stance for this team (§13 2.6 ABOVE-layer input) -----
-                CommanderStance stance = GetCommanderStance(squad.Team);
+                CommanderStance stance = GetCommanderStance(ref state, squad.Team);
 
                 // ---- O(1) utility: pick the best posture (with Aggression bias + stickiness) --
                 Entity focus;
@@ -327,11 +327,11 @@ namespace Bulwark.Sim
         }
 
         /// <summary>
-        /// Reads the §13 1.5 commander stance for a team (Defend default if absent). Touches only
-        /// SystemAPI, so it takes no <c>ref SystemState</c> — unlike the buffer/EntityManager
-        /// helpers below it needs no state handle (minor-style cleanup per canon review).
+        /// Reads the §13 1.5 commander stance for a team (Defend default if absent). Takes
+        /// <c>ref SystemState state</c> because it uses SystemAPI.Query: the Entities source
+        /// generator needs the state handle to update query handles + complete dependencies (SGSG0002).
         /// </summary>
-        private CommanderStance GetCommanderStance(int team)
+        private CommanderStance GetCommanderStance(ref SystemState state, int team)
         {
             foreach (var cmd in SystemAPI.Query<RefRO<AICommander>>())
             {
@@ -537,7 +537,7 @@ namespace Bulwark.Sim
 
                 // Affordability (projected unpaid cost + this unit) against current Gold. We do
                 // NOT pre-spend; this only avoids queuing what the side plausibly cannot fund.
-                int gold = GetTeamGold(team);
+                int gold = GetTeamGold(ref state, team);
                 int projected = ProjectedUnpaidCost(orders, catalog);
 
                 // Choose ONE unit to add this reeval, biased by local need:
@@ -667,9 +667,9 @@ namespace Bulwark.Sim
 
         // ============================ CATALOG / GOLD HELPERS ============================
 
-        // Touches only SystemAPI (no buffer/EntityManager access), so it takes no
-        // <c>ref SystemState</c> — minor-style cleanup per canon review.
-        private int GetTeamGold(int team)
+        // Uses SystemAPI.Query, so it takes <c>ref SystemState state</c>: the Entities source
+        // generator needs the state handle to update query handles + complete dependencies (SGSG0002).
+        private int GetTeamGold(ref SystemState state, int team)
         {
             foreach (var gs in SystemAPI.Query<RefRO<GoldStore>>())
             {
