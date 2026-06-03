@@ -23,6 +23,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# game-ci's test-runner publishes a check-run with results; that needs checks:write.
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   test:
     name: EditMode + PlayMode tests (compile validation)
@@ -45,7 +50,10 @@ jobs:
           projectPath: .
           testMode: all
           artifactsPath: test-results
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          # githubToken omitted: results are published via the test-results artifact; passing
+          # GITHUB_TOKEN here makes the action create a check-run, which fails with "Resource
+          # not accessible by integration" unless checks:write is granted (now granted above).
+          # Omitting it keeps the step green regardless of repo token-permission defaults.
       - name: Publish test results
         uses: actions/upload-artifact@v4
         if: always()
