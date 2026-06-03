@@ -12,8 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef0002, type: 3}
   m_Name: CounterMatrix
   m_EditorClassIdentifier:
-  # FULL 5x4 type x armor matrix (Phase 2.2). idx=(dt-1)*4+(armor-1).
-  # rows dmg {Melee,Pierce,Blunt,Fire,Poison} x cols armor {Light,Shielded,Heavy,Unarmored}. PROVISIONAL.
   counterMatrix:
   - 1.25
   - 0.75
