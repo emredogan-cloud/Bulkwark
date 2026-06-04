@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef000b, type: 3}
+  m_Name: Starter Offer
+  m_EditorClassIdentifier:
+  id: shop_starter_s0
+  displayName: Starter Offer
+  productType: 6
+  priceUsdCents: 299
+  priceGems: 0
+  shownValueNote: One-time: 500 Gems + Steel Shieldman skin
+  firstPurchaseOffer: 1
+  contents:
+  - 
+    kind: 1
+    amount: 500
+    cosmeticId: 
+  - 
+    kind: 4
+    amount: 0
+    cosmeticId: cosmetic_ip_shieldman_veteran_steel

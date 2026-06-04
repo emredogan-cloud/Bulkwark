@@ -1,0 +1,471 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef000a, type: 3}
+  m_Name: BattlePass_S0
+  m_EditorClassIdentifier:
+  seasonId: s0
+  displayName: Season 0
+  tierCount: 50
+  passXpPerTier: 1000
+  premiumPriceGems: 950
+  premiumPriceUsdCents: 999
+  tiers:
+  - tier: 1
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 2
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 3
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 4
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 5
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 4
+      amount: 0
+      cosmeticId: cosmetic_banner_ironpact_s0
+  - tier: 6
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 7
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 8
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 9
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 10
+    freeReward:
+      kind: 4
+      amount: 0
+      cosmeticId: cosmetic_ip_shieldman_veteran_steel
+    premiumReward:
+      kind: 1
+      amount: 40
+      cosmeticId: 
+  - tier: 11
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 12
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 13
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 14
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 15
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 4
+      amount: 0
+      cosmeticId: cosmetic_emote_ashen_taunt
+  - tier: 16
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 17
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 18
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 19
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 20
+    freeReward:
+      kind: 4
+      amount: 0
+      cosmeticId: cosmetic_ah_raider_veteran_ash
+    premiumReward:
+      kind: 1
+      amount: 40
+      cosmeticId: 
+  - tier: 21
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 22
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 23
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 24
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 25
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 4
+      amount: 0
+      cosmeticId: cosmetic_ip_legionary_veteran_bronze
+  - tier: 26
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 27
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 28
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 29
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 30
+    freeReward:
+      kind: 4
+      amount: 0
+      cosmeticId: cosmetic_ip_crossbow_elite_emerald
+    premiumReward:
+      kind: 1
+      amount: 40
+      cosmeticId: 
+  - tier: 31
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 32
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 33
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 34
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 35
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 4
+      amount: 0
+      cosmeticId: cosmetic_ah_houndmaster_legendary_spectral
+  - tier: 36
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 37
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 38
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 39
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 40
+    freeReward:
+      kind: 4
+      amount: 0
+      cosmeticId: cosmetic_ah_razorbeast_elite_obsidian
+    premiumReward:
+      kind: 1
+      amount: 40
+      cosmeticId: 
+  - tier: 41
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 42
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 43
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 44
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 45
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 4
+      amount: 0
+      cosmeticId: cosmetic_ip_shieldman_elite_crimson
+  - tier: 46
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 47
+    freeReward:
+      kind: 3
+      amount: 15
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 48
+    freeReward:
+      kind: 0
+      amount: 100
+      cosmeticId: 
+    premiumReward:
+      kind: 3
+      amount: 30
+      cosmeticId: 
+  - tier: 49
+    freeReward:
+      kind: 2
+      amount: 200
+      cosmeticId: 
+    premiumReward:
+      kind: 0
+      amount: 150
+      cosmeticId: 
+  - tier: 50
+    freeReward:
+      kind: 4
+      amount: 0
+      cosmeticId: cosmetic_ip_battlemage_legendary_arcane
+    premiumReward:
+      kind: 1
+      amount: 40
+      cosmeticId: 

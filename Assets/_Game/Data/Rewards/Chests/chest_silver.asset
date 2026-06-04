@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef000c, type: 3}
+  m_Name: Silver Chest
+  m_EditorClassIdentifier:
+  id: chest_silver
+  displayName: Silver Chest
+  tier: 1
+  sourceNote: daily / win streak
+  openMinutes: 180
+  slotCap: 4
+  dupeToShards: 1
+  drops:
+  - kind: 0
+    rarity: 0
+    weight: 40
+    amount: 120
+    cosmeticId: 
+  - kind: 3
+    rarity: 1
+    weight: 30
+    amount: 20
+    cosmeticId: 
+  - kind: 1
+    rarity: 0
+    weight: 20
+    amount: 10
+    cosmeticId: 
+  - kind: 4
+    rarity: 2
+    weight: 10
+    amount: 0
+    cosmeticId: cosmetic_ip_crossbow_elite_emerald
