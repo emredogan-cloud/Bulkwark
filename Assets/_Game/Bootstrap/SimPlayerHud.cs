@@ -64,7 +64,8 @@ namespace Bulwark.Bootstrap
         // rule/balance change. The manual buttons remain fully functional (player-driven training). Debug-only.
         private bool _autoDemo = true;
         private float _worldReady0 = -1f;
-        private bool _autoTrained;
+        private bool _autoMinersQueued;
+        private float _lastAutoTrain = -100f;
         private float _lastAutoAdvance = -100f;
 
         private World _w;
@@ -91,19 +92,32 @@ namespace Bulwark.Bootstrap
                 if (_advanceReq) { int n = AdvanceAllPlayerUnits(); Debug.Log($"[HUD] ADVANCE -> {n} player units ordered to the enemy statue."); _advanceReq = false; }
                 if (_pauseReq) { _paused = !_paused; Time.timeScale = _paused ? 0f : 1f; Debug.Log($"[HUD] PAUSE = {_paused}."); _pauseReq = false; }
 
-                // ---- DEBUG AUTO-DEMO (reproducible first-observable-combat; same control writes as the buttons) ----
+                // ---- DEBUG AUTO-DEMO (V2): drive the FULL economy loop — mine → train → push — reproducibly,
+                // using the SAME control writes the buttons do (EnqueueTrain + MoveDestination). No rule/balance change.
                 if (_autoDemo && _rosterLoaded)
                 {
                     if (_worldReady0 < 0f) _worldReady0 = Time.unscaledTime;
                     float el = Time.unscaledTime - _worldReady0;
-                    if (!_autoTrained && el > 4f)
+
+                    // 1) ECONOMY: train 2 miners first → MiningSystem auto-assigns them to mines → gold income.
+                    if (!_autoMinersQueued && el > 3f)
+                    {
+                        int mi = MinerIndex();
+                        if (mi >= 0) { Training.EnqueueTrain(_em, PlayerTeam, mi); Training.EnqueueTrain(_em, PlayerTeam, mi); Debug.Log($"[HUD] AUTO-DEMO queued 2 miners (#{mi}) for economy."); }
+                        else Debug.Log("[HUD] AUTO-DEMO: no miner role in roster.");
+                        _autoMinersQueued = true;
+                    }
+
+                    // 2) ARMY: once income can flow, train the cheapest affordable combat unit on a cadence.
+                    if (el > 8f && (Time.unscaledTime - _lastAutoTrain) > 4f)
                     {
                         int idx = CheapestAffordableCombat();
-                        if (idx >= 0) { Training.EnqueueTrain(_em, PlayerTeam, idx); Debug.Log($"[HUD] AUTO-DEMO train cheapest combat unit #{idx} (gold {_goldP})."); }
-                        else Debug.Log($"[HUD] AUTO-DEMO: no affordable combat unit (gold {_goldP}).");
-                        _autoTrained = true;
+                        if (idx >= 0) { Training.EnqueueTrain(_em, PlayerTeam, idx); Debug.Log($"[HUD] AUTO-DEMO train combat #{idx} (gold {_goldP})."); }
+                        _lastAutoTrain = Time.unscaledTime;
                     }
-                    if (_autoTrained && el > 12f && (Time.unscaledTime - _lastAutoAdvance) > 5f)
+
+                    // 3) PUSH: advance all player units toward the enemy statue on a cadence (attack-move).
+                    if (el > 14f && (Time.unscaledTime - _lastAutoAdvance) > 5f)
                     {
                         int n = AdvanceAllPlayerUnits();
                         if (n > 0) Debug.Log($"[HUD] AUTO-DEMO advance ({n} player units).");
@@ -126,6 +140,20 @@ namespace Bulwark.Bootstrap
                 if (b.Cost <= _goldP && b.Cost < bestCost) { bestCost = b.Cost; best = b.Index; }
             }
             return best;
+        }
+
+        /// <summary>Roster index of the Miner unit (for the economy auto-demo), or -1 if the roster has none.</summary>
+        private int MinerIndex()
+        {
+            for (int i = 0; i < _roster.Count; i++) if (_roster[i].Role == RoleId.Miner) return _roster[i].Index;
+            return -1;
+        }
+
+        /// <summary>Authored GoldCost for a roster unit index (read-only, for the stall display), or -1.</summary>
+        private int CostOf(int unitIndex)
+        {
+            for (int i = 0; i < _roster.Count; i++) if (_roster[i].Index == unitIndex) return _roster[i].Cost;
+            return -1;
         }
 
         private void LoadRoster()
@@ -166,7 +194,12 @@ namespace Bulwark.Bootstrap
                     var ords = _em.GetBuffer<TrainOrder>(qents[i], true);
                     sb.Append("queue[").Append(ords.Length).Append("]: ");
                     for (int k = 0; k < ords.Length && k < 6; k++)
-                        sb.Append('#').Append(ords[k].UnitIndex).Append('(').Append(ords[k].Remaining <= 0f ? "wait" : ords[k].Remaining.ToString("0.0")).Append(") ");
+                    {
+                        sb.Append('#').Append(ords[k].UnitIndex);
+                        int c = CostOf(ords[k].UnitIndex);
+                        if (k == 0 && ords[k].Paid == 0 && c > _goldP) sb.Append("(STALL need ").Append(c).Append("g) ");
+                        else sb.Append('(').Append(ords[k].Remaining <= 0f ? "wait" : ords[k].Remaining.ToString("0.0")).Append(") ");
+                    }
                 }
             _queueText = sb.ToString();
         }
@@ -225,11 +258,13 @@ namespace Bulwark.Bootstrap
             if (!_ready) { GUI.Label(new Rect(x, y, w, 30), "world not ready…", _lbl); return; }
             if (_roster.Count == 0) { GUI.Label(new Rect(x, y, w, 30), "loading roster…", _lbl); return; }
 
-            GUI.Label(new Rect(x, y, w, 26), "Train (spends gold):", _lbl); y += 30f;
+            GUI.Label(new Rect(x, y, w, 26), "Train (spends gold; greyed = can't afford):", _lbl); y += 30f;
             for (int i = 0; i < _roster.Count; i++)
             {
                 var b = _roster[i];
+                GUI.enabled = b.Cost <= _goldP; // affordable-gating: can't enqueue an unaffordable head that would stall the queue
                 if (GUI.Button(new Rect(x, y, w, bh), $"[{b.Index}] {b.Role}  —  {b.Cost}g", _btn)) _trainReq = b.Index;
+                GUI.enabled = true;
                 y += bh + gap;
             }
 
