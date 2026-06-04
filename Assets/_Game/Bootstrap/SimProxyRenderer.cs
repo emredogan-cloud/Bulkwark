@@ -175,6 +175,24 @@ namespace Bulwark.Bootstrap
             px.Mr.SetPropertyBlock(_mpb);
         }
 
+        private Material _proxyMat;
+
+        /// <summary>Shared URP material for all proxies. CreatePrimitive's DEFAULT material is the built-in
+        /// Standard shader, which renders MAGENTA under URP and ignores the MPB _BaseColor tint — so we must
+        /// assign an actual URP shader here for the team colors to show. Per-proxy color is then applied via
+        /// the MaterialPropertyBlock (_BaseColor) over this shared material.</summary>
+        private Material ProxyMat()
+        {
+            if (_proxyMat != null) return _proxyMat;
+            Shader sh = Shader.Find("Universal Render Pipeline/Unlit");
+            if (sh == null) sh = Shader.Find("Universal Render Pipeline/Lit");
+            if (sh == null) sh = Shader.Find("Sprites/Default");
+            if (sh == null) sh = Shader.Find("Unlit/Color");
+            _proxyMat = sh != null ? new Material(sh) : null;
+            Debug.Log("[PROXY] proxy material shader = " + (sh != null ? sh.name : "NULL (kept default — may render magenta)"));
+            return _proxyMat;
+        }
+
         private Proxy CreateProxy(Kind kind)
         {
             PrimitiveType pt = kind == Kind.Mine ? PrimitiveType.Cube
@@ -184,6 +202,7 @@ namespace Bulwark.Bootstrap
             go.name = "proxy_" + kind;
             var col = go.GetComponent<Collider>(); if (col != null) Destroy(col); // debug visual only; no physics
             var mr = go.GetComponent<MeshRenderer>();
+            var m = ProxyMat(); if (m != null) mr.sharedMaterial = m; // URP shader so the team-color tint shows (not magenta)
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             mr.receiveShadows = false;
             return new Proxy { Go = go, Mr = mr, Kind = kind };
