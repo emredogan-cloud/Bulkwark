@@ -47,7 +47,10 @@ namespace Bulwark.Services.LiveOps
         ///   • "endless_faster_waves" → the EXISTING Endless AdaptiveDirector wave-pacing knob (Phase 3).
         /// LSD may extend this list ONLY by adding keys for rules that ALREADY exist (never a new mechanic).
         /// </summary>
-        public static readonly IReadOnlyCollection<string> KnownExistingRuleKeys = new HashSet<string>(StringComparer.Ordinal)
+        // Typed HashSet (not IReadOnlyCollection) so membership uses the O(1) INSTANCE Contains —
+        // IReadOnlyCollection<string> has no Contains, and without a System.Linq import the compiler
+        // mis-binds ".Contains" to the span MemoryExtensions.Contains (CS7036). HashSet avoids both.
+        public static readonly HashSet<string> KnownExistingRuleKeys = new HashSet<string>(StringComparer.Ordinal)
         {
             "endless_faster_waves",
         };
