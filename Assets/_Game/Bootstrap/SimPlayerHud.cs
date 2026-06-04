@@ -58,6 +58,15 @@ namespace Bulwark.Bootstrap
         private bool _pauseReq;
         private bool _paused;
 
+        // DEBUG AUTO-DEMO: deterministically exercises the full train→push→combat loop a few seconds after
+        // the world is ready, so first-observable-combat is reproducible on-device WITHOUT fragile tap
+        // coordinates. It issues the SAME control writes the buttons do (EnqueueTrain + MoveDestination) — no
+        // rule/balance change. The manual buttons remain fully functional (player-driven training). Debug-only.
+        private bool _autoDemo = true;
+        private float _worldReady0 = -1f;
+        private bool _autoTrained;
+        private float _lastAutoAdvance = -100f;
+
         private World _w;
         private EntityManager _em;
         private bool _ready;
@@ -81,8 +90,42 @@ namespace Bulwark.Bootstrap
                 if (_trainReq >= 0) { Training.EnqueueTrain(_em, PlayerTeam, _trainReq); Debug.Log($"[HUD] TRAIN requested unit {_trainReq} (player)."); _trainReq = -1; }
                 if (_advanceReq) { int n = AdvanceAllPlayerUnits(); Debug.Log($"[HUD] ADVANCE -> {n} player units ordered to the enemy statue."); _advanceReq = false; }
                 if (_pauseReq) { _paused = !_paused; Time.timeScale = _paused ? 0f : 1f; Debug.Log($"[HUD] PAUSE = {_paused}."); _pauseReq = false; }
+
+                // ---- DEBUG AUTO-DEMO (reproducible first-observable-combat; same control writes as the buttons) ----
+                if (_autoDemo && _rosterLoaded)
+                {
+                    if (_worldReady0 < 0f) _worldReady0 = Time.unscaledTime;
+                    float el = Time.unscaledTime - _worldReady0;
+                    if (!_autoTrained && el > 4f)
+                    {
+                        int idx = CheapestAffordableCombat();
+                        if (idx >= 0) { Training.EnqueueTrain(_em, PlayerTeam, idx); Debug.Log($"[HUD] AUTO-DEMO train cheapest combat unit #{idx} (gold {_goldP})."); }
+                        else Debug.Log($"[HUD] AUTO-DEMO: no affordable combat unit (gold {_goldP}).");
+                        _autoTrained = true;
+                    }
+                    if (_autoTrained && el > 12f && (Time.unscaledTime - _lastAutoAdvance) > 5f)
+                    {
+                        int n = AdvanceAllPlayerUnits();
+                        if (n > 0) Debug.Log($"[HUD] AUTO-DEMO advance ({n} player units).");
+                        _lastAutoAdvance = Time.unscaledTime;
+                    }
+                }
             }
             catch (System.Exception e) { Debug.LogError("[HUD] error: " + e.Message); }
+        }
+
+        /// <summary>Index of the cheapest NON-miner unit affordable at current gold, or -1. Read-only of the
+        /// roster/gold the HUD already cached — picks an existing unit, invents no stat (§15).</summary>
+        private int CheapestAffordableCombat()
+        {
+            int best = -1, bestCost = int.MaxValue;
+            for (int i = 0; i < _roster.Count; i++)
+            {
+                var b = _roster[i];
+                if (b.Role == RoleId.Miner) continue;
+                if (b.Cost <= _goldP && b.Cost < bestCost) { bestCost = b.Cost; best = b.Index; }
+            }
+            return best;
         }
 
         private void LoadRoster()
