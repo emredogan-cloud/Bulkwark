@@ -177,48 +177,63 @@ namespace Bulwark.Bootstrap
             }
         }
 
+        // ---- TEMPORARY forensic lifecycle logs (BOOTSTRAP_EXECUTION_REPORT). Removable; no gameplay change. ----
+        private void Awake()    { Debug.Log("[BOOTSTRAP] Awake — BattleBootstrap is a LIVE MonoBehaviour (not baked)."); }
+        private void OnEnable() { Debug.Log("[BOOTSTRAP] OnEnable."); }
+
         private void Start()
         {
-            if (!ValidateConfig()) return;
+            Debug.Log("[BOOTSTRAP] Start — beginning world build.");
+            if (!ValidateConfig()) { Debug.LogError("[BOOTSTRAP] ValidateConfig FAILED — world NOT built."); return; }
 
             World world = World.DefaultGameObjectInjectionWorld;
             if (world == null || !world.IsCreated)
             {
-                Debug.LogError("[BattleBootstrap] No default ECS World — cannot build the battle.");
+                Debug.LogError("[BOOTSTRAP] No default ECS World — cannot build the battle.");
                 return;
             }
 
             EntityManager em = world.EntityManager;
 
-            // Retire the superseded Phase-0 spike BEFORE building state (documented no-op now).
-            DisablePhase0SpikeSystems(world);
+            try
+            {
+                // Retire the superseded Phase-0 spike BEFORE building state (documented no-op now).
+                DisablePhase0SpikeSystems(world);
 
-            BuildMatchSingletons(em);
-            BuildUnitCatalogs(em);            // TWO per-team catalogs (Iron Pact vs Ashen Horde).
-            BuildCounterMatrix(em);
-            BuildSpellSetup(em);              // catalog + inbox + per-side loadout + draft state.
-            BuildDifficultyAndScheduler(em);  // DifficultyAxes + AISchedulerState singletons.
+                BuildMatchSingletons(em);         Debug.Log("[BOOTSTRAP] Created MatchState singleton.");
+                BuildUnitCatalogs(em);            Debug.Log("[BOOTSTRAP] Created UnitCatalogs (player + AI).");
+                BuildCounterMatrix(em);           Debug.Log("[BOOTSTRAP] Created CounterMatrix.");
+                BuildSpellSetup(em);              Debug.Log("[BOOTSTRAP] Created Spell setup.");
+                BuildDifficultyAndScheduler(em);  Debug.Log("[BOOTSTRAP] Created DifficultyAxes + AIScheduler.");
 
-            // Statues sit at the MapDef's statue X's (player = team0StatueX, AI = team1StatueX).
-            float midRowY = rowSpacing; // centre row of the 3-row front
-            float2 playerStatue = new float2(map.team0StatueX, midRowY);
-            float2 aiStatue = new float2(map.team1StatueX, midRowY);
-            // Spawn anchors sit just inboard of each statue, on the single front (§11).
-            float dir = math.sign(map.team1StatueX - map.team0StatueX);
-            if (dir == 0f) dir = 1f;
-            float2 playerSpawn = new float2(map.team0StatueX + dir * 4f, midRowY);
-            float2 aiSpawn = new float2(map.team1StatueX - dir * 4f, midRowY);
+                // Statues sit at the MapDef's statue X's (player = team0StatueX, AI = team1StatueX).
+                float midRowY = rowSpacing; // centre row of the 3-row front
+                float2 playerStatue = new float2(map.team0StatueX, midRowY);
+                float2 aiStatue = new float2(map.team1StatueX, midRowY);
+                // Spawn anchors sit just inboard of each statue, on the single front (§11).
+                float dir = math.sign(map.team1StatueX - map.team0StatueX);
+                if (dir == 0f) dir = 1f;
+                float2 playerSpawn = new float2(map.team0StatueX + dir * 4f, midRowY);
+                float2 aiSpawn = new float2(map.team1StatueX - dir * 4f, midRowY);
 
-            BuildSide(em, PlayerTeam, spawnPos: playerSpawn, statuePos: playerStatue,
-                      commander: playerCommander, isPlayer: true);
-            BuildSide(em, AiTeam, spawnPos: aiSpawn, statuePos: aiStatue,
-                      commander: aiCommander, isPlayer: false);
+                BuildSide(em, PlayerTeam, spawnPos: playerSpawn, statuePos: playerStatue,
+                          commander: playerCommander, isPlayer: true);
+                Debug.Log("[BOOTSTRAP] Created GoldStore + Statue + TrainQueue (Player).");
+                BuildSide(em, AiTeam, spawnPos: aiSpawn, statuePos: aiStatue,
+                          commander: aiCommander, isPlayer: false);
+                Debug.Log("[BOOTSTRAP] Created GoldStore + Statue + TrainQueue + AICommander (AI).");
 
-            BuildAISquads(em, aiSpawn);
-            BuildTerrain(em, midRowY);
-            BuildMines(em, midRowY);
+                BuildAISquads(em, aiSpawn);       Debug.Log("[BOOTSTRAP] Created AI squads.");
+                BuildTerrain(em, midRowY);        Debug.Log("[BOOTSTRAP] Created Terrain.");
+                BuildMines(em, midRowY);          Debug.Log("[BOOTSTRAP] Created Mines.");
 
-            FrameCamera();
+                FrameCamera();
+                Debug.Log("[BOOTSTRAP] World build COMPLETE (units spawn at runtime via TrainingSystem).");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError("[BOOTSTRAP] EXCEPTION during world build: " + e);
+            }
         }
 
         // ---------------------------------------------------------------- validation
