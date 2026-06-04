@@ -33,6 +33,8 @@ namespace Bulwark.Data
         public int openMinutes = 15;           // timer; Gems may SKIP (convenience only)
         public int slotCap = 4;                // gentle pacing
         public bool dupeToShards = true;       // duplicate cosmetics convert to shards (§8)
+        public int dupeShardValue = 10;        // SERVER/DATA-owned dupe->shard payout (NEVER client-supplied); §8
+        public int skipGemPrice = 20;          // SERVER/DATA-owned gem chest-skip price (convenience only, §9)
 
         [Header("Disclosed odds — cosmetic+currency only (no power)")]
         public List<ChestDrop> drops = new List<ChestDrop>();

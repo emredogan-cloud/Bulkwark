@@ -119,6 +119,7 @@ namespace Bulwark.Services.Monetization
         private readonly int _dailyCap;
         private int _watchedToday;
         private int _dayAnchorOrdinal = -1; // trusted-UTC day-ordinal the count belongs to (rollover resets)
+        private bool _watchInFlight;        // re-entrancy guard: ONE opt-in watch at a time (protects the daily cap; closes the read-cap/await/increment TOCTOU)
 
         public const string DefaultPlacement = "rewarded.default";
 
@@ -167,6 +168,11 @@ namespace Bulwark.Services.Monetization
         /// </summary>
         public async Task<RewardedAdResult> WatchForRewardAsync(int trustedDayOrdinal, string placementId = DefaultPlacement)
         {
+            // Re-entrancy guard: reject a second watch while one is still pending, so overlapping opt-in
+            // taps cannot each pass the cap check before either increments the counter (TOCTOU on the cap).
+            if (_watchInFlight)
+                return RewardedAdResult.Rejected(RewardedAdReject.NotAvailable, RemainingToday(trustedDayOrdinal));
+
             int remaining = RemainingToday(trustedDayOrdinal);
             if (remaining <= 0)
                 return RewardedAdResult.Rejected(RewardedAdReject.DailyCapReached, 0);
@@ -177,24 +183,32 @@ namespace Bulwark.Services.Monetization
             if (!MonetizationSafety.IsGameplaySafe(_rewardPerView))
                 return RewardedAdResult.Rejected(RewardedAdReject.UnsafeReward, remaining);
 
-            // (2) Show ONE rewarded ad (player-initiated; opt-in). No interstitial, no auto-play.
-            AdViewResult view = await _ads.ShowAsync(placementId ?? DefaultPlacement);
-            if (view.Outcome != AdViewOutcome.Completed)
+            _watchInFlight = true;
+            try
             {
-                var reason = view.Outcome == AdViewOutcome.NoFill ? RewardedAdReject.NotAvailable
-                                                                  : RewardedAdReject.NotCompleted;
-                return RewardedAdResult.Rejected(reason, remaining); // skipped/failed → no reward, no penalty
+                // (2) Show ONE rewarded ad (player-initiated; opt-in). No interstitial, no auto-play.
+                AdViewResult view = await _ads.ShowAsync(placementId ?? DefaultPlacement);
+                if (view.Outcome != AdViewOutcome.Completed)
+                {
+                    var reason = view.Outcome == AdViewOutcome.NoFill ? RewardedAdReject.NotAvailable
+                                                                      : RewardedAdReject.NotCompleted;
+                    return RewardedAdResult.Rejected(reason, remaining); // skipped/failed → no reward, no penalty
+                }
+
+                // (3)+(4) Completed → grant the gameplay-safe reward SERVER-SIDE (currency/PassXP only). The
+                // attribution token is what the SERVER validates in production; we pass it as the audit source.
+                bool granted = await GrantRewardAsync(view.AttributionToken);
+                if (!granted)
+                    return RewardedAdResult.Rejected(RewardedAdReject.ServerRejected, remaining);
+
+                _watchedToday++; // mirror the server-owned count (server is the durable authority)
+                int left = RemainingToday(trustedDayOrdinal);
+                return RewardedAdResult.Granted(_rewardPerView.kind, _rewardPerView.amount, left);
             }
-
-            // (3)+(4) Completed → grant the gameplay-safe reward SERVER-SIDE (currency/PassXP only). The
-            // attribution token is what the SERVER validates in production; we pass it as the audit source.
-            bool granted = await GrantRewardAsync(view.AttributionToken);
-            if (!granted)
-                return RewardedAdResult.Rejected(RewardedAdReject.ServerRejected, remaining);
-
-            _watchedToday++; // mirror the server-owned count (server is the durable authority)
-            int left = RemainingToday(trustedDayOrdinal);
-            return RewardedAdResult.Granted(_rewardPerView.kind, _rewardPerView.amount, left);
+            finally
+            {
+                _watchInFlight = false;
+            }
         }
 
         // ------------------------------------------------------------------ internals

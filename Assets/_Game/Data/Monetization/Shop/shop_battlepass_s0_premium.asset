@@ -17,6 +17,7 @@ MonoBehaviour:
   productType: 2
   priceUsdCents: 999
   priceGems: 0
-  shownValueNote: Premium track: cosmetics + currency, earnable by play
+  shownValueNote: 'Premium track: cosmetics + currency, earnable by play'
   firstPurchaseOffer: 0
-  contents:
+  entitlementSku: pass.s0.premium
+  contents: []

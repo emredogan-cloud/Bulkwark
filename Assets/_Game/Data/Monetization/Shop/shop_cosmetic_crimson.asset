@@ -19,8 +19,5 @@ MonoBehaviour:
   priceGems: 800
   shownValueNote: Elite recolor (cosmetic only)
   firstPurchaseOffer: 0
-  contents:
-  - 
-    kind: 4
-    amount: 0
-    cosmeticId: cosmetic_ip_shieldman_elite_crimson
+  entitlementSku: cosmetic_ip_shieldman_elite_crimson
+  contents: []

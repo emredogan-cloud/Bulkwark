@@ -186,43 +186,41 @@ namespace Bulwark.Services.Rewards
         // ============================================================= open flow (earn -> grant)
 
         /// <summary>
-        /// Open ONE earned chest. Enforces, in order: slot/timer pacing (§8) with an optional Gems
-        /// SKIP (convenience-only, §9); a single disclosed-weight roll; DUPLICATE cosmetic → SHARD
-        /// conversion (dupe protection, §8); a per-grant IsGameplaySafe assert (fail closed — GATE 4);
-        /// and a SERVER-AUTHORITATIVE grant (§12). NO power can be granted. NOT a paid random box.
+        /// Open ONE earned chest. Order (currency-loss-safe): slot-cap pacing (§8); a single
+        /// disclosed-weight roll; DUPLICATE cosmetic → SHARD conversion (dupe protection, §8, DATA-owned
+        /// payout); a per-grant IsGameplaySafe assert (fail closed — GATE 4); THEN, only once a grantable
+        /// reward is guaranteed, the optional Gems SKIP charge (convenience-only, §9, DATA-owned price);
+        /// then a SERVER-AUTHORITATIVE grant (§12). A failed roll/safety check can never cost gems. NO
+        /// power can be granted. NOT a paid random box.
         ///
         /// <paramref name="timerElapsed"/>: whether the open timer has already elapsed for FREE (compute
         ///   via IsTimerElapsed). If false, <paramref name="paySkipWithGems"/>=true buys the convenience
-        ///   skip via IEntitlementService.PurchaseWithGemsAsync(SkipSku, skipGemPrice).
+        ///   skip via IEntitlementService.PurchaseWithGemsAsync(SkipSku, _def.skipGemPrice). The skip price
+        ///   and the dupe→shard value are DATA/SERVER-owned (ChestDef), never client-supplied (anti-abuse).
         /// <paramref name="currentlyQueued"/>: queue size for the slot-cap check.
-        /// DEFERRED: live server grants + authoritative timer/queue persistence (BaaS adapter).
+        /// DEFERRED: live server grants + authoritative timer/queue persistence + a single skip+grant
+        ///   server transaction (so the narrow skip-charged-then-grant-failed window is atomic). (BaaS.)
         /// </summary>
         public async Task<ChestOpenResult> OpenAsync(
-            bool timerElapsed, int currentlyQueued, bool paySkipWithGems, long skipGemPrice,
-            DupeOwnershipCheck ownsCosmetic = null, int dupeToShardAmount = 10)
+            bool timerElapsed, int currentlyQueued, bool paySkipWithGems,
+            DupeOwnershipCheck ownsCosmetic = null)
         {
             // --- pacing: slot cap (§8) -------------------------------------------------------
             // Opening frees a slot; we only reject if the queue is so full the chest can't exist.
             if (currentlyQueued > Math.Max(0, _def.slotCap))
                 return ChestOpenResult.Rejected(ChestOpenReject.SlotCapReached);
 
-            // --- pacing: open timer (§8) + optional Gems SKIP (convenience only, §9) ---------
-            if (!timerElapsed)
-            {
-                if (!paySkipWithGems)
-                    return ChestOpenResult.Rejected(ChestOpenReject.TimerNotElapsed); // wait for free, or skip
+            // --- timer gate: must have elapsed for FREE, or the player opted to pay the gem skip.
+            //     We do NOT charge yet — first determine a grantable reward, so a failed roll/safety
+            //     check can never cost gems (currency-loss fix). ----------------------------------
+            if (!timerElapsed && !paySkipWithGems)
+                return ChestOpenResult.Rejected(ChestOpenReject.TimerNotElapsed); // wait for free, or skip
 
-                // The skip sku PREFIX guarantees MonetizationSafety.IsGemSpendAllowed; the spend
-                // debits Gems via the server economy (PurchaseWithGemsAsync) — never buys power.
-                PurchaseResult skip = await _entitlements.PurchaseWithGemsAsync(SkipSku, skipGemPrice);
-                if (!skip.Ok) return ChestOpenResult.Rejected(ChestOpenReject.SkipSpendFailed);
-            }
-
-            // --- roll using the DISCLOSED weights (§8) ---------------------------------------
+            // --- roll using the DISCLOSED weights (§8) — BEFORE any charge --------------------
             if (!RollRewards(out RewardGrant rolled))
                 return ChestOpenResult.Rejected(ChestOpenReject.EmptyTable);
 
-            // --- duplicate cosmetic -> shards (dupe protection, §8) --------------------------
+            // --- duplicate cosmetic -> shards (dupe protection, §8); DATA/SERVER-owned payout ---
             int dupes = 0;
             RewardGrant grant = rolled;
             if (_def.dupeToShards && rolled.kind == RewardKind.Cosmetic && !string.IsNullOrEmpty(rolled.cosmeticId)
@@ -232,19 +230,31 @@ namespace Bulwark.Services.Rewards
                 if (alreadyOwned)
                 {
                     // Convert the duplicate into CosmeticShards (craft currency) — never a power refund.
+                    // Amount is DATA-owned (_def.dupeShardValue), NEVER a client-supplied parameter
+                    // (closes the free-shard-inflation hole).
                     grant = new RewardGrant
                     {
                         kind = RewardKind.CosmeticShards,
-                        amount = Math.Max(1, dupeToShardAmount),
+                        amount = Math.Max(1, _def.dupeShardValue),
                         cosmeticId = null,
                     };
                     dupes = 1;
                 }
             }
 
-            // --- GATE 4: assert gameplay-safe BEFORE granting (fail closed) ------------------
+            // --- GATE 4: assert gameplay-safe BEFORE charging or granting (fail closed) -------
             if (!MonetizationSafety.IsGameplaySafe(in grant))
                 return ChestOpenResult.Rejected(ChestOpenReject.UnsafeReward);
+
+            // --- pacing: NOW charge the optional Gems SKIP (convenience only, §9) — only after a
+            //     grantable reward is guaranteed, so a failed roll/safety check never costs gems. The
+            //     price is DATA/SERVER-owned (_def.skipGemPrice), never client-supplied. The skip sku
+            //     PREFIX guarantees MonetizationSafety.IsGemSpendAllowed; never buys power. -----------
+            if (!timerElapsed)
+            {
+                PurchaseResult skip = await _entitlements.PurchaseWithGemsAsync(SkipSku, _def.skipGemPrice);
+                if (!skip.Ok) return ChestOpenResult.Rejected(ChestOpenReject.SkipSpendFailed);
+            }
 
             // --- SERVER-AUTHORITATIVE grant (§12, HARD RULE #1) ------------------------------
             bool granted = await GrantAsync(grant);
@@ -282,10 +292,12 @@ namespace Bulwark.Services.Rewards
                 }
                 case RewardKind.CosmeticShards:
                 {
-                    // Shards are a server-owned craft currency. There is no Currency member for shards
-                    // (the 4-currency rule, §9), so shards are an ENTITLEMENT-tracked balance: grant a
-                    // shard entitlement increment server-side. DEFERRED: the BaaS shard ledger.
-                    var r = await _entitlements.GrantAsync("shards." + ShardKey(g.amount), "chest:" + SafeId());
+                    // Shards are a server-owned ADDITIVE craft currency, not one of the 4 wallet
+                    // currencies (§9), so they are entitlement/inventory-tracked. UNIFIED scheme (matches
+                    // BattlePass / Quests / Shop): a STABLE id "cosmetic.shards" with the quantity carried
+                    // in the source, so the server ADDS to the running shard balance (§8 "no dead pulls")
+                    // rather than treating amount-keyed ids as set membership. DEFERRED: the BaaS shard ledger.
+                    var r = await _entitlements.GrantAsync("cosmetic.shards", "chest:" + SafeId() + ":+" + g.amount);
                     return r.Ok;
                 }
                 case RewardKind.Cosmetic:
@@ -296,7 +308,8 @@ namespace Bulwark.Services.Rewards
                 case RewardKind.ChestKey:
                 {
                     // A convenience chest-key entitlement (opens/queues another earned chest — no power).
-                    var r = await _entitlements.GrantAsync("convenience.chestkey." + SafeId(), "chest:" + SafeId());
+                    // UNIFIED stable id "convenience.chestkey" with the quantity in the source.
+                    var r = await _entitlements.GrantAsync("convenience.chestkey", "chest:" + SafeId() + ":+" + g.amount);
                     return r.Ok;
                 }
                 default:
@@ -307,10 +320,6 @@ namespace Bulwark.Services.Rewards
         // ============================================================= helpers
 
         private string SafeId() => string.IsNullOrEmpty(_def.id) ? _def.tier.ToString().ToLowerInvariant() : _def.id;
-
-        // Encodes the shard amount in the entitlement key so the server ledger can apply the increment
-        // without a payload beyond the count (no PII — §12). The amount is also carried by the grant.
-        private static string ShardKey(int amount) => amount.ToString();
 
         private static readonly Random _rng = new Random();
         private static int DefaultRoll(int exclusiveMax) => exclusiveMax <= 0 ? 0 : _rng.Next(exclusiveMax);

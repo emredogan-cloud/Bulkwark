@@ -23,6 +23,14 @@ namespace Bulwark.Data
         [TextArea] public string shownValueNote; // the "shown value" (§10 transparent ladder)
         public bool firstPurchaseOffer;   // one-time conversion anchor (§10)
 
+        [Header("Canonical entitlement / gem-spend SKU granted by this purchase")]
+        // The id the purchase GRANTS and (for gem-priced items) spends against. It MUST satisfy
+        // §9 MonetizationSafety.IsGemSpendAllowed for gem-priced items, and for products consumed by
+        // another service it MUST equal that service's id (e.g. a BattlePassPremium item's
+        // entitlementSku == BattlePassService.PremiumEntitlementId, "pass.{seasonId}.premium").
+        // Empty => fall back to `id` (used for gem-pack / bundle products that deliver via `contents`).
+        public string entitlementSku;
+
         [Header("Contents — gameplay-safe only (MonetizationSafety.IsGameplaySafe)")]
         public List<RewardGrant> contents = new List<RewardGrant>();
     }

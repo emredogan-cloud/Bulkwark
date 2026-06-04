@@ -97,7 +97,10 @@ namespace Bulwark.Game.Cosmetics
         public static CosmeticSafetyResult Validate(CosmeticDef def)
         {
             if (def == null || string.IsNullOrEmpty(def.id)) return CosmeticSafetyResult.Fail(CosmeticSafetyReject.NoId);
-            if (string.IsNullOrEmpty(def.archetypeId))       return CosmeticSafetyResult.Fail(CosmeticSafetyReject.NoArchetype);
+            // OUT-OF-BATTLE variants (emote/banner, §6) skin NO unit, so they legitimately carry no
+            // archetypeId — require an archetype ONLY for IN-BATTLE variants (skins/recolors/weapon).
+            if (!OutfitClass.IsOutOfBattle(def.variant) && string.IsNullOrEmpty(def.archetypeId))
+                return CosmeticSafetyResult.Fail(CosmeticSafetyReject.NoArchetype);
             if (!System.Enum.IsDefined(typeof(OutfitTier), def.tier))        return CosmeticSafetyResult.Fail(CosmeticSafetyReject.BadTier);
             if (!System.Enum.IsDefined(typeof(Rarity), def.rarity))          return CosmeticSafetyResult.Fail(CosmeticSafetyReject.BadRarity);
             if (!System.Enum.IsDefined(typeof(CosmeticVariant), def.variant)) return CosmeticSafetyResult.Fail(CosmeticSafetyReject.BadVariant);
@@ -144,6 +147,10 @@ namespace Bulwark.Game.Cosmetics
         {
             skin = default;
             if (!CosmeticSafety.IsReadSafe(def)) return false; // never apply an unsafe cosmetic
+            // OUT-OF-BATTLE cosmetics (emote/banner) are NOT unit skins — they render in the meta UI,
+            // never on a combat unit, so they never resolve to a ReadSafeSkin (the "never on a unit"
+            // contract is enforced here, not just by data convention). §6.
+            if (IsOutOfBattle(def.variant)) return false;
 
             skin = new ReadSafeSkin(
                 archetypeId: def.archetypeId,

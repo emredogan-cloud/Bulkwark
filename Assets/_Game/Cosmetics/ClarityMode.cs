@@ -102,7 +102,14 @@ namespace Bulwark.Game.Cosmetics
             if (ShouldStandardize(in ctx))
                 return FactionBasePalette.StandardSkin(archetypeId, faction); // §6: opponents read clean in ranked
 
-            if (ownedCosmetic != null && OutfitClass.TryResolve(ownedCosmetic, out ReadSafeSkin skin))
+            // §6 faction-color-identity lock (enforced, not merely by data convention): a cosmetic may
+            // only skin the LOCKED unit it was authored for — its archetypeId AND faction must match the
+            // unit being rendered. A mismatched (mis-authored) cosmetic fails closed to the read-safe base,
+            // so it can never project the WRONG faction identity onto a unit (the inviolable read).
+            if (ownedCosmetic != null
+                && ownedCosmetic.archetypeId == archetypeId
+                && ownedCosmetic.faction == faction
+                && OutfitClass.TryResolve(ownedCosmetic, out ReadSafeSkin skin))
                 return skin; // your own (or non-ranked) cosmetic — prestige shown, still read-safe by construction
 
             return FactionBasePalette.StandardSkin(archetypeId, faction); // fail-closed base default

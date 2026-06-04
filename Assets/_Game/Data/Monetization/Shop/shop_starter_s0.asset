@@ -17,14 +17,12 @@ MonoBehaviour:
   productType: 6
   priceUsdCents: 299
   priceGems: 0
-  shownValueNote: One-time: 500 Gems + Steel Shieldman skin
+  shownValueNote: 'One-time: 500 Gems + Steel Shieldman skin'
   firstPurchaseOffer: 1
   contents:
-  - 
-    kind: 1
+  - kind: 1
     amount: 500
     cosmeticId: 
-  - 
-    kind: 4
+  - kind: 4
     amount: 0
     cosmeticId: cosmetic_ip_shieldman_veteran_steel

@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7c1f0a1eb0a14b6da0000000beef000d, type: 3}
-  m_Name: Daily: Win 3
+  m_Name: 'Daily: Win 3'
   m_EditorClassIdentifier:
   id: quest_daily_win3
-  displayName: Daily: Win 3
+  displayName: 'Daily: Win 3'
   cadence: 0
   objectiveKey: win_battles
   targetCount: 3

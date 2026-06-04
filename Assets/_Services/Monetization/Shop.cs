@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bulwark.Data;
 using Bulwark.Services.Analytics;
+using Bulwark.Services.Economy;
 
 namespace Bulwark.Services.Monetization
 {
@@ -75,6 +76,7 @@ namespace Bulwark.Services.Monetization
         public const string GemPathForMoney  = "gem_path_for_money_item"; // wrong purchase path for the price kind
         public const string MoneyPathForGem  = "money_path_for_gem_item";
         public const string PurchaseFailed   = "purchase_failed";    // entitlement/economy rejected the spend
+        public const string BadGemSku        = "bad_gem_sku";        // gem-priced item's entitlement sku fails §9 IsGemSpendAllowed
     }
 
     /// <summary>
@@ -101,6 +103,7 @@ namespace Bulwark.Services.Monetization
     public sealed class ShopService
     {
         private readonly IEntitlementService _entitlements;
+        private readonly IServerEconomy _economy;   // server-authoritative currency seam (delivers bundle contents)
         private readonly GameAnalytics _analytics; // optional; minimized/non-PII events only (§12)
 
         // Catalog indexed by sku for O(1) purchase lookup. Authored content (the SO list), not invented here.
@@ -114,9 +117,10 @@ namespace Bulwark.Services.Monetization
         // the real source of truth (entitlement ownership); this flag is a client-side UX/idempotency guard.
         private bool _firstPurchaseClaimed;
 
-        public ShopService(IEntitlementService entitlements, GameAnalytics analytics = null)
+        public ShopService(IEntitlementService entitlements, IServerEconomy economy, GameAnalytics analytics = null)
         {
             _entitlements = entitlements ?? throw new ArgumentNullException(nameof(entitlements));
+            _economy = economy ?? throw new ArgumentNullException(nameof(economy));
             _analytics = analytics;
         }
 
@@ -198,13 +202,14 @@ namespace Bulwark.Services.Monetization
             var offerGuard = GuardFirstPurchase(def);
             if (offerGuard != null) return PurchaseResult.Failure(offerGuard);
 
-            // SERVER-authoritative: spend gems + grant entitlement on the server. Client adopts the answer.
-            var result = await _entitlements.PurchaseWithGemsAsync(def.id, def.priceGems);
+            // SERVER-authoritative: spend gems + grant the canonical entitlement SKU on the server.
+            var result = await _entitlements.PurchaseWithGemsAsync(EntitlementSkuOf(def), def.priceGems);
             if (result.Ok)
             {
                 MarkClaimedIfFirstPurchase(def);
                 // Currency event carries delta + reason CODE only — never a balance (§12).
                 _analytics?.CurrencySpend(Currency.Gems, def.priceGems, "shop:" + def.id);
+                await GrantContentsAsync(def, "shop:" + def.id); // deliver bundle contents (gem packs / bundles)
             }
             return result.Ok ? result : PurchaseResult.Failure(result.Error ?? ShopError.PurchaseFailed);
         }
@@ -227,9 +232,13 @@ namespace Bulwark.Services.Monetization
             var offerGuard = GuardFirstPurchase(def);
             if (offerGuard != null) return PurchaseResult.Failure(offerGuard);
 
-            // SERVER validates the receipt then grants the entitlement (the client never self-grants).
-            var result = await _entitlements.RedeemIapReceiptAsync(def.id, platformReceipt);
-            if (result.Ok) MarkClaimedIfFirstPurchase(def);
+            // SERVER validates the receipt then grants the canonical entitlement SKU (client never self-grants).
+            var result = await _entitlements.RedeemIapReceiptAsync(EntitlementSkuOf(def), platformReceipt);
+            if (result.Ok)
+            {
+                MarkClaimedIfFirstPurchase(def);
+                await GrantContentsAsync(def, "shop:" + def.id); // deliver bundle contents (gem packs / bundles)
+            }
             return result.Ok ? result : PurchaseResult.Failure(result.Error ?? ShopError.PurchaseFailed);
         }
 
@@ -264,7 +273,53 @@ namespace Bulwark.Services.Monetization
             if (def.priceGems < 0 || def.priceUsdCents < 0) return CatalogValidation.Bad(ShopError.BadPrice);
             if (gem == money) return CatalogValidation.Bad(ShopError.BadPrice); // need exactly one (both=0 or both>0 ⇒ bad)
 
+            // (c) A GEM-priced item's entitlement/spend SKU MUST satisfy §9 IsGemSpendAllowed, otherwise
+            // the gem purchase is rejected at point of sale (a silently-dead listing). Fail LOUD here so a
+            // mis-authored gem SKU surfaces in LoadCatalog's rejected list instead of becoming unbuyable.
+            if (gem && !MonetizationSafety.IsGemSpendAllowed(EntitlementSkuOf(def)))
+                return CatalogValidation.Bad(ShopError.BadGemSku);
+
             return CatalogValidation.Good(isGemPriced: gem);
+        }
+
+        /// <summary>The canonical entitlement / gem-spend SKU a purchase grants: ShopItemDef.entitlementSku
+        /// when set, else the item id. For gem-priced items it must satisfy §9 IsGemSpendAllowed; for
+        /// products consumed by another service it must equal that service's id (e.g. pass.{seasonId}.premium).</summary>
+        public static string EntitlementSkuOf(ShopItemDef def)
+            => string.IsNullOrEmpty(def.entitlementSku) ? def.id : def.entitlementSku;
+
+        /// <summary>
+        /// Deliver a purchased item's def.contents through the SERVER-authoritative seams — currency via
+        /// IServerEconomy, cosmetic/shards/chest-key via IEntitlementService — the same per-kind routing
+        /// BattlePass/Chests use, with the UNIFIED shard/chest-key entitlement ids ("cosmetic.shards" /
+        /// "convenience.chestkey", quantity carried in the source). Each grant re-asserts IsGameplaySafe
+        /// (fail-closed — never delivers power). Used for gem packs (the gems) and bundles (gems + cosmetic);
+        /// pure-cosmetic / pass items carry the product in entitlementSku and ship empty contents.
+        /// (DEFERRED: a real backend delivers these in the SAME server transaction as the receipt/spend.)
+        /// </summary>
+        private async Task GrantContentsAsync(ShopItemDef def, string source)
+        {
+            if (def.contents == null) return;
+            for (int i = 0; i < def.contents.Count; i++)
+            {
+                var g = def.contents[i];
+                if (!MonetizationSafety.IsGameplaySafe(g)) continue; // fail-closed: never deliver an unsafe content
+                switch (g.kind)
+                {
+                    case RewardKind.Silver:
+                        { var r = await _economy.GrantAsync(Currency.Silver, g.amount, source); if (r.Ok) _analytics?.CurrencyGrant(Currency.Silver, g.amount, source); break; }
+                    case RewardKind.Gems:
+                        { var r = await _economy.GrantAsync(Currency.Gems, g.amount, source); if (r.Ok) _analytics?.CurrencyGrant(Currency.Gems, g.amount, source); break; }
+                    case RewardKind.PassXP:
+                        { var r = await _economy.GrantAsync(Currency.PassXP, g.amount, source); if (r.Ok) _analytics?.CurrencyGrant(Currency.PassXP, g.amount, source); break; }
+                    case RewardKind.Cosmetic:
+                        await _entitlements.GrantAsync(g.cosmeticId, source); break;
+                    case RewardKind.CosmeticShards:
+                        await _entitlements.GrantAsync("cosmetic.shards", source + ":+" + g.amount); break;
+                    case RewardKind.ChestKey:
+                        await _entitlements.GrantAsync("convenience.chestkey", source + ":+" + g.amount); break;
+                }
+            }
         }
 
         private static ShopListing ToListing(ShopItemDef def)

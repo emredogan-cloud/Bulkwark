@@ -336,14 +336,19 @@ namespace Bulwark.Services.Monetization
                 }
 
                 case RewardKind.CosmeticShards:
+                {
+                    // UNIFIED shard grant (matches Chests / Quests / Shop): a STABLE id "cosmetic.shards"
+                    // with the quantity carried in the source, so the server ADDS to the additive shard
+                    // balance (§8 "no dead pulls"). No shard WALLET exists at MVP (not a Currency, §9) —
+                    // entitlement/inventory-tracked, server-validated. DEFERRED: the BaaS shard ledger.
+                    EntitlementResult r = await _entitlements.GrantAsync("cosmetic.shards", source + ":+" + g.amount);
+                    return r.Ok;
+                }
+
                 case RewardKind.ChestKey:
                 {
-                    // No shard/chest WALLET exists at MVP (not a Currency, §9). Route through the server
-                    // entitlement/inventory seam under a synthetic, gameplay-safe id so the grant is still
-                    // SERVER-VALIDATED (client never self-grants). DEFERRED: a real shard/chest inventory
-                    // backend that increments by g.amount (here the server records the grant event).
-                    string invId = "inv." + g.kind.ToString().ToLowerInvariant() + "." + source;
-                    EntitlementResult r = await _entitlements.GrantAsync(invId, source);
+                    // UNIFIED chest-key grant: stable id "convenience.chestkey", quantity in the source.
+                    EntitlementResult r = await _entitlements.GrantAsync("convenience.chestkey", source + ":+" + g.amount);
                     return r.Ok;
                 }
 

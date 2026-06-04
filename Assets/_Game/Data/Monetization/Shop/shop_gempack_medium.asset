@@ -20,7 +20,6 @@ MonoBehaviour:
   shownValueNote: 550 Gems (+10% value)
   firstPurchaseOffer: 0
   contents:
-  - 
-    kind: 1
+  - kind: 1
     amount: 550
     cosmeticId: 

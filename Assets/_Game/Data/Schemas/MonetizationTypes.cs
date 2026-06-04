@@ -74,9 +74,14 @@ namespace Bulwark.Data
             }
         }
 
-        /// <summary>§9 "gems CANNOT": gems may be spent ONLY on these. Power is never an option.</summary>
+        /// <summary>§9 "gems CANNOT": gems may be spent ONLY on these gameplay-safe CATEGORIES — never power.
+        /// Accepts both the dotted synthesized form (pass./convenience./chestskip./slot. and cosmetic.)
+        /// AND the underscore asset-id form used by authored CosmeticDef ids (cosmetic_… — which also
+        /// covers cosmetic_banner_… and cosmetic_emote_…, since every cosmetic asset id is "cosmetic_"-prefixed).
+        /// A power sku is unrepresentable, so admitting the cosmetic asset-id prefix stays category-safe.</summary>
         public static bool IsGemSpendAllowed(string sku)
-            => sku != null && (sku.StartsWith("cosmetic.") || sku.StartsWith("pass.") ||
+            => sku != null && (sku.StartsWith("cosmetic.") || sku.StartsWith("cosmetic_") ||
+                               sku.StartsWith("pass.") ||
                                sku.StartsWith("convenience.") || sku.StartsWith("chestskip.") || sku.StartsWith("slot."));
     }
 }
