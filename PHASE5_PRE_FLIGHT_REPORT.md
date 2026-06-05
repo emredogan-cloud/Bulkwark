@@ -1,5 +1,28 @@
 # BULWARK — Phase 5 Pre-Flight Report
 
+> ## 🔁 RE-AUTHORIZATION PRE-FLIGHT (2026-06-05, after the successful Presentation Pass)
+> **New authorization received** ("PHASE 5 AUTHORIZATION") with a stated objective of presentation/
+> professionalization (character differentiation, battle HUD, audio/VFX/animation frameworks, polish). Mandatory
+> pre-flight re-done: re-read the roadmap (§13 phase plan + gates), all ADRs, Phase 0–4 reports, all pre-Phase-5
+> (V0–V2 + GATE1) reports, the Asset Migration reports, and the Presentation/Final-Polish reports.
+>
+> **Deliverables of this pre-flight:** `reports/phase-5/PHASE5_ENTRY_AUDIT.md` (full state/debt/readiness/risks/
+> **contradictions**/stop conditions) and `docs/adr/ADR-5-003-phase5-authorization-after-presentation-pass.md`.
+>
+> **OUTCOME — STOP at the entry gate (honest, no constraint waived).** The pre-flight surfaces a **material
+> contradiction** (detailed in the entry audit §12 + ADR-5-003): the stated objective = **new presentation
+> features**, but roadmap **Phase 5 = "Soft Launch & Tuning — *tuning only, NO new features*"** validated by
+> **GATE 5 (real D1/D7/D30 LTV/retention)**. Roadmap Phase 5 is **un-executable / un-fabricatable** here (no live
+> soft launch; ADR-5-002 LTV floor still PROPOSED/unset), and **GATE 1 (FUN) = FAIL** remains unwaived. Per the
+> authorization's own rules ("do not waive any constraint," "no fabricated PASS," "stop at the first required gate
+> and report honestly"), **work stops at the Phase-5 entry decision and an owner choice is requested** (re-scope
+> the requested work as a *Production Presentation* phase distinct from roadmap Phase 5 / address GATE 1 first /
+> accept roadmap Phase 5 as telemetry-blocked readiness-only). **No constraint waived; no PASS fabricated; no
+> presentation work mislabeled as roadmap Phase 5.** Inherited debt (GATE 1 FAIL · GATE 2/3 DEFERRED · GATE 4
+> PASS-static · GATE 5 DEFERRED) is preserved. The original 2026-06-04 pre-flight (ADR-5-001) follows below.
+
+---
+
 **Date:** 2026-06-04 · **Authorization:** [ADR-5-001](docs/adr/ADR-5-001-conditional-phase5-authorization.md)
 (conditional, following the green Phase-4 validation). **Authority (binding):** roadmap §1/§13 Phase 5/§14/§15/§16;
 `ROADMAP_CHANGELOG.md`; `PRODUCTION_DECISION_LOG.md`; `docs/execution/PHASE_5_MASTER_EXECUTION_PROMPT.md`;
