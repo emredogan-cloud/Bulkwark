@@ -175,8 +175,18 @@ namespace Bulwark.Bootstrap
                 Debug.Log($"[PROXY] SPAWN {kind} proxy (entity index {e.Index}).");
             }
 
-            // Combat viz: a drop in HP since last frame -> flash white briefly (+ a throttled hit SFX).
-            if (curHp >= 0f && curHp < px.LastHp - 0.01f) { px.Flash = 0.25f; if (PresentationState.InMatch) AudioManager.Instance?.Hit(); }
+            // Combat viz: a drop in HP since last frame -> flash white briefly (+ throttled hit SFX + impact VFX).
+            if (curHp >= 0f && curHp < px.LastHp - 0.01f)
+            {
+                px.Flash = 0.25f;
+                if (PresentationState.InMatch)
+                {
+                    AudioManager.Instance?.Hit();
+                    var fxPos = new Vector3(p.x, p.y, 0f);
+                    if (kind == Kind.Statue) VfxManager.Instance?.StatueDamage(fxPos);
+                    else VfxManager.Instance?.Impact(fxPos);
+                }
+            }
             px.LastHp = curHp;
 
             // Position on the z=0 battlefield plane.
@@ -252,9 +262,14 @@ namespace Bulwark.Bootstrap
             {
                 if (_proxies.TryGetValue(dead[i], out var px))
                 {
+                    Vector3 dpos = px.Go != null ? px.Go.transform.position : Vector3.zero;
                     if (px.Go != null) Destroy(px.Go);
-                    // Unit death feedback (throttled, Match-only) — presentation reaction to a culled unit proxy.
-                    if (PresentationState.InMatch && (px.Kind == Kind.UnitP || px.Kind == Kind.UnitAI)) AudioManager.Instance?.Death();
+                    // Unit death feedback (Match-only) — presentation reaction to a culled unit proxy (SFX + puff VFX).
+                    if (PresentationState.InMatch && (px.Kind == Kind.UnitP || px.Kind == Kind.UnitAI))
+                    {
+                        AudioManager.Instance?.Death();
+                        VfxManager.Instance?.DeathPuff(dpos);
+                    }
                 }
                 _proxies.Remove(dead[i]);
                 Debug.Log($"[PROXY] DEATH/cull proxy (entity index {dead[i].Index}).");
