@@ -86,7 +86,7 @@ namespace Bulwark.Bootstrap
             {
                 ReadState();
                 BuildRosterButtons();                 // one-shot once the catalog is ready
-                if (_trainReq >= 0) { Training.EnqueueTrain(_em, PlayerTeam, _trainReq); Debug.Log($"[BHUD] TRAIN unit {_trainReq}."); _trainReq = -1; }
+                if (_trainReq >= 0) { Training.EnqueueTrain(_em, PlayerTeam, _trainReq); AudioManager.Instance?.Train(); Debug.Log($"[BHUD] TRAIN unit {_trainReq}."); _trainReq = -1; }
                 if (_advanceReq) { int n = AdvanceAllPlayerUnits(); Debug.Log($"[BHUD] ADVANCE -> {n} units."); _advanceReq = false; }
                 Refresh();
             }
@@ -222,7 +222,7 @@ namespace Bulwark.Bootstrap
                 if (_btnSprite != null) { img.sprite = _btnSprite; img.type = Image.Type.Sliced; }
                 img.color = IronBlue;
                 var btn = go.AddComponent<Button>(); btn.targetGraphic = img;
-                btn.onClick.AddListener(() => _trainReq = idx);
+                btn.onClick.AddListener(() => { AudioManager.Instance?.Click(); _trainReq = idx; });
                 Label(go.transform, role + "\n" + cost + "g", 28, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, TextAnchor.MiddleCenter, Color.white);
                 _btns.Add(new Btn { Index = idx, Role = role, Cost = cost, Button = btn, Bg = img });
             }
@@ -301,7 +301,7 @@ namespace Bulwark.Bootstrap
         {
             var go = NewRect("Btn_" + text, parent, anchor, anchor, new Vector2(-100, 0), size);
             var img = go.AddComponent<Image>(); img.sprite = _white; img.color = col;
-            var btn = go.AddComponent<Button>(); btn.targetGraphic = img; btn.onClick.AddListener(onClick);
+            var btn = go.AddComponent<Button>(); btn.targetGraphic = img; btn.onClick.AddListener(() => { AudioManager.Instance?.Click(); onClick?.Invoke(); });
             Label(go.transform, text, 30, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, TextAnchor.MiddleCenter, Color.white);
             return btn;
         }

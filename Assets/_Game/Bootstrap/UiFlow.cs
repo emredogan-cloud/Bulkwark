@@ -110,6 +110,13 @@ namespace Bulwark.Bootstrap
             // hidden throughout the front-end (observability remains via logcat); flag Match for BattleHud.
             PresentationState.SuppressDebugHud = true;
             PresentationState.InMatch = (s == Screen.Match);
+            // Audio (presentation-only): menu music in menus, battle music in Match (stinger handled in ShowEnd).
+            var au = AudioManager.Instance;
+            if (au != null)
+            {
+                if (s == Screen.Match) { au.ResetStingers(); au.PlayBattleMusic(); }
+                else if (s == Screen.Splash || s == Screen.Menu || s == Screen.ModeSelect) au.PlayMenuMusic();
+            }
             Debug.Log("[UI] screen = " + s);
         }
 
@@ -127,6 +134,7 @@ namespace Bulwark.Bootstrap
             _endSummary.text = victory ? "The enemy statue has fallen." : "Your statue has fallen.";
             var img = _panelEnd.GetComponent<Image>();
             if (img != null) { var s = Spr(victory ? "bg_victory" : "bg_defeat"); if (s != null) { img.sprite = s; img.color = Color.white; } }
+            AudioManager.Instance?.PlayEndStinger(victory); // stops the loop + fires the stinger exactly once
             Show(Screen.End);
         }
 
@@ -232,7 +240,7 @@ namespace Bulwark.Bootstrap
             else img.color = tint;
             var btn = go.AddComponent<Button>();
             btn.targetGraphic = img;
-            btn.onClick.AddListener(onClick);
+            btn.onClick.AddListener(() => { AudioManager.Instance?.Click(); onClick?.Invoke(); });
             Label(go.transform, text, 48, Vector2.zero, new Vector2(620, 140), TextAnchor.MiddleCenter, Color.white);
         }
 

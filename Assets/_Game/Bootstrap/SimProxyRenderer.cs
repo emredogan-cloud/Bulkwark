@@ -175,8 +175,8 @@ namespace Bulwark.Bootstrap
                 Debug.Log($"[PROXY] SPAWN {kind} proxy (entity index {e.Index}).");
             }
 
-            // Combat viz: a drop in HP since last frame -> flash white briefly.
-            if (curHp >= 0f && curHp < px.LastHp - 0.01f) px.Flash = 0.25f;
+            // Combat viz: a drop in HP since last frame -> flash white briefly (+ a throttled hit SFX).
+            if (curHp >= 0f && curHp < px.LastHp - 0.01f) { px.Flash = 0.25f; if (PresentationState.InMatch) AudioManager.Instance?.Hit(); }
             px.LastHp = curHp;
 
             // Position on the z=0 battlefield plane.
@@ -250,7 +250,12 @@ namespace Bulwark.Bootstrap
             if (dead == null) return;
             for (int i = 0; i < dead.Count; i++)
             {
-                if (_proxies.TryGetValue(dead[i], out var px) && px.Go != null) Destroy(px.Go);
+                if (_proxies.TryGetValue(dead[i], out var px))
+                {
+                    if (px.Go != null) Destroy(px.Go);
+                    // Unit death feedback (throttled, Match-only) — presentation reaction to a culled unit proxy.
+                    if (PresentationState.InMatch && (px.Kind == Kind.UnitP || px.Kind == Kind.UnitAI)) AudioManager.Instance?.Death();
+                }
                 _proxies.Remove(dead[i]);
                 Debug.Log($"[PROXY] DEATH/cull proxy (entity index {dead[i].Index}).");
             }
