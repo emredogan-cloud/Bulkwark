@@ -27,7 +27,9 @@ namespace Bulwark.Bootstrap
         // Curated placeholder set copied into StreamingAssets/bulwark/ (see ASSET_INVENTORY.md mapping).
         private static readonly string[] Names =
         {
-            "unit_player", "unit_ai", "miner", "mine", "statue", "statue_cracks",
+            // unit archetype sprites (per-role differentiation; team conveyed by tint)
+            "unit_player", "unit_ai", "miner", "u_heavy", "u_ranged", "u_caster",
+            "mine", "statue", "statue_cracks",
             "bg_battle", "bg_menu", "bg_victory", "bg_defeat", "button", "panel", "gold",
         };
 

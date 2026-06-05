@@ -22,6 +22,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 using Bulwark.Sim;
+using Bulwark.Data;
 
 namespace Bulwark.Bootstrap
 {
@@ -38,6 +39,20 @@ namespace Bulwark.Bootstrap
         }
 
         private enum Kind : byte { UnitP = 0, UnitAI = 1, Mine = 2, Statue = 3 }
+
+        // Visual archetype for unit differentiation — derived READ-ONLY from the unit's CombatProfile
+        // (DamageType/ArmorClass) + MinerTag. No sim/spawn/balance change; purely picks a placeholder sprite.
+        private enum Arch : byte { Skirmisher = 0, Shield = 1, Heavy = 2, Ranged = 3, Caster = 4, Miner = 5 }
+
+        private static Arch ClassifyArch(bool isMiner, DamageType dt, ArmorClass ac)
+        {
+            if (isMiner) return Arch.Miner;
+            if (dt == DamageType.Fire || dt == DamageType.Poison) return Arch.Caster;   // Battlemage / Hexcaster
+            if (dt == DamageType.Pierce || dt == DamageType.Blunt) return Arch.Ranged;   // Crossbow / Slinger
+            if (ac == ArmorClass.Shielded) return Arch.Shield;                           // Shieldman (frontline)
+            if (ac == ArmorClass.Heavy) return Arch.Heavy;                               // Ironclad / Razorbeast / Legionary
+            return Arch.Skirmisher;                                                      // Raider / Houndmaster
+        }
 
         private sealed class Proxy
         {
@@ -107,7 +122,16 @@ namespace Bulwark.Bootstrap
                         if (hp[i].Current <= 0f) continue; // dead -> let it be culled (proxy destroyed below)
                         float frac = hp[i].Max > 0f ? Mathf.Clamp01(hp[i].Current / hp[i].Max) : 1f;
                         Kind k = team[i].Id == PlayerTeam ? Kind.UnitP : Kind.UnitAI;
-                        UpdateProxy(ents[i], k, pos[i].Value, frac, hp[i].Current);
+                        // Archetype (read-only): MinerTag + CombatProfile → distinct placeholder sprite per role.
+                        bool isMiner = _em.HasComponent<MinerTag>(ents[i]);
+                        Arch arch;
+                        if (!isMiner && _em.HasComponent<CombatProfile>(ents[i]))
+                        {
+                            var cp = _em.GetComponentData<CombatProfile>(ents[i]);
+                            arch = ClassifyArch(false, cp.DamageType, cp.ArmorClass);
+                        }
+                        else arch = isMiner ? Arch.Miner : Arch.Skirmisher;
+                        UpdateProxy(ents[i], k, arch, pos[i].Value, frac, hp[i].Current);
                         Bounds2D(pos[i].Value, ref minX, ref maxX, ref minY, ref maxY); total++;
                     }
                 }
@@ -116,7 +140,7 @@ namespace Bulwark.Bootstrap
                 using (var pos = _qMine.ToComponentDataArray<Position>(Allocator.Temp))
                     for (int i = 0; i < ents.Length && total < MaxProxies; i++)
                     {
-                        UpdateProxy(ents[i], Kind.Mine, pos[i].Value, 1f, -1f);
+                        UpdateProxy(ents[i], Kind.Mine, Arch.Skirmisher, pos[i].Value, 1f, -1f);
                         Bounds2D(pos[i].Value, ref minX, ref maxX, ref minY, ref maxY); total++;
                     }
                 // ---- Statues ----
@@ -126,7 +150,7 @@ namespace Bulwark.Bootstrap
                     for (int i = 0; i < ents.Length && total < MaxProxies; i++)
                     {
                         float frac = st[i].MaxHealth > 0f ? Mathf.Clamp01(st[i].Health / st[i].MaxHealth) : 1f;
-                        UpdateProxy(ents[i], Kind.Statue, pos[i].Value, frac, st[i].Health);
+                        UpdateProxy(ents[i], Kind.Statue, Arch.Skirmisher, pos[i].Value, frac, st[i].Health);
                         Bounds2D(pos[i].Value, ref minX, ref maxX, ref minY, ref maxY); total++;
                     }
             }
@@ -137,10 +161,10 @@ namespace Bulwark.Bootstrap
             if (total > 0) ConfigureCamera(minX, maxX, minY, maxY);
 
             _logTimer += dt;
-            if (_logTimer >= 2f) { _logTimer = 0f; Debug.Log($"[PROXY] proxies={_proxies.Count} (rendering {total} entities as primitives)."); }
+            if (_logTimer >= 2f) { _logTimer = 0f; Debug.Log($"[PROXY] proxies={_proxies.Count} (rendering {total} entities as sprites)."); }
         }
 
-        private void UpdateProxy(Entity e, Kind kind, float2 p, float hpFrac, float curHp)
+        private void UpdateProxy(Entity e, Kind kind, Arch arch, float2 p, float hpFrac, float curHp)
         {
             _seen.Add(e);
             if (!_proxies.TryGetValue(e, out Proxy px))
@@ -159,7 +183,7 @@ namespace Bulwark.Bootstrap
             px.Go.transform.position = new Vector3(p.x, p.y, 0f);
 
             // Sprite: real placeholder art when loaded (StreamingAssets), else a white fallback (never invisible).
-            Sprite spr = PlaceholderAssets.Instance != null ? PlaceholderAssets.Instance.Get(SpriteKey(kind)) : null;
+            Sprite spr = PlaceholderAssets.Instance != null ? PlaceholderAssets.Instance.Get(SpriteKey(kind, arch)) : null;
             if (spr == null) spr = Fallback();
             px.Sr.sprite = spr;
 
@@ -193,8 +217,21 @@ namespace Bulwark.Bootstrap
             return _fallback;
         }
 
-        private static string SpriteKey(Kind k) =>
-            k == Kind.UnitP ? "unit_player" : k == Kind.UnitAI ? "unit_ai" : k == Kind.Mine ? "mine" : "statue";
+        private static string SpriteKey(Kind k, Arch a)
+        {
+            if (k == Kind.Mine) return "mine";
+            if (k == Kind.Statue) return "statue";
+            // Units (either team): pick the placeholder sprite by archetype; team is conveyed by the tint below.
+            switch (a)
+            {
+                case Arch.Miner:  return "miner";
+                case Arch.Shield: return "unit_ai";     // Spearton (shield silhouette)
+                case Arch.Heavy:  return "u_heavy";     // Giant
+                case Arch.Ranged: return "u_ranged";    // Archidon
+                case Arch.Caster: return "u_caster";    // Magikill
+                default:          return "unit_player"; // Swordwrath (skirmisher/flanker)
+            }
+        }
 
         private Proxy CreateProxy(Kind kind)
         {
