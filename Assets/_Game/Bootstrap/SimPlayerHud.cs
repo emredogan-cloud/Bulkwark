@@ -222,6 +222,7 @@ namespace Bulwark.Bootstrap
                 for (int i = 0; i < ents.Length; i++)
                 {
                     if (team[i].Id != PlayerTeam) continue;
+                    if (_em.HasComponent<MinerTag>(ents[i])) continue; // keep miners on the mines (don't send them to die)
                     var dest = new MoveDestination { Value = target, Active = 1 };
                     if (_em.HasComponent<MoveDestination>(ents[i])) _em.SetComponentData(ents[i], dest);
                     else _em.AddComponentData(ents[i], dest);

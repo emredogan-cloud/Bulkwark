@@ -283,59 +283,55 @@ namespace Bulwark.Sim
             // Role comparison uses the sim-side RoleId enum carried by UnitSpawnStats,
             // so which catalog index is which role is discovered at runtime, never
             // hardcoded to a fixed slot (HARD RULE 4).
-            int idxMiner      = FindRoleIndex(catalog, RoleId.Miner);
-            int idxFrontline  = FindRoleIndex(catalog, RoleId.Frontline);
-            int idxSkirmisher = FindRoleIndex(catalog, RoleId.Skirmisher);
-            int idxRanged     = FindRoleIndex(catalog, RoleId.Ranged);
+            int idxMiner = FindRoleIndex(catalog, RoleId.Miner);
 
             // ---- Economy first: top up miners up to the fair floor -----------------
-            if (sig.OwnMiners < TargetMiners && idxMiner >= 0)
+            // BUG-FIX (GATE-1 re-gate): count IN-FLIGHT (queued, not-yet-spawned) miners as well as
+            // ALIVE ones when comparing to the floor. Without this, OwnMiners (alive-only) stays 0 for
+            // the first few seconds while miners train, so the AI re-queues miners every reeval and
+            // front-loads its whole 100 gold into excess miner orders — bottoming out the economy before
+            // any miner spawns to raise the count, leaving it stuck with no gold for combat. This is a
+            // pure COUNTING fix: TargetMiners and all data-driven costs/rates are unchanged (no balance).
+            int inFlightMiners = idxMiner >= 0 ? CountQueuedRole(ref state, team, idxMiner) : 0;
+            if (sig.OwnMiners + inFlightMiners < TargetMiners && idxMiner >= 0)
             {
                 TryEnqueue(ref state, team, idxMiner, in sig, catalog);
                 return; // one decision per reeval tick keeps pacing gentle
             }
 
-            // ---- Combat mix under the chosen stance --------------------------------
-            // Pick ONE combat role to add this tick, biased by stance. We rotate by a
-            // cheap signal (own unit count) so the build self-balances over time
-            // without storing per-role tallies — a fair, legible composition.
-            int pick = ChooseCombatRole(stance, sig.OwnUnits, idxFrontline, idxSkirmisher, idxRanged);
+            // ---- Combat mix: ROSTER-AGNOSTIC (GATE-1 re-gate bug-fix) ---------------
+            // BUG-FIX: the old code only resolved Frontline/Skirmisher/Ranged (roles 2/3/4) and so
+            // could NOT train rosters whose combat units use other roles — e.g. the Ashen Horde's
+            // Heavy/Flanker/Caster were unreachable, capping the AI at 2 of its 5 combat units (no
+            // tank). Now we rotate across EVERY non-miner unit actually present in THIS side's catalog,
+            // so the AI fields its full, varied composition. Still data-driven; selects existing catalog
+            // entries only — TrainingSystem applies the authored cost/time (no balance/stat change).
+            int pick = ChooseCombatUnit(catalog, idxMiner, sig.OwnUnits);
             if (pick >= 0)
                 TryEnqueue(ref state, team, pick, in sig, catalog);
         }
 
         /// <summary>
-        /// Stance-weighted choice of a single combat role to queue. Rotation by a
-        /// counter (own unit count) yields a steady frontline/skirmisher/ranged blend
-        /// rather than spamming one unit — fair, not optimal.
+        /// Pick one NON-miner combat unit from this side's catalog, rotating across all of them by a
+        /// cheap counter (own unit count) so the build is a steady, varied, legible blend rather than a
+        /// single-unit spam. Roster-agnostic (no hardcoded role): it trains whatever combat units the
+        /// faction actually has. Returns -1 if the catalog has no non-miner unit.
         /// </summary>
-        private int ChooseCombatRole(CommanderStance stance, int rotation,
-                                     int idxFrontline, int idxSkirmisher, int idxRanged)
+        private static int ChooseCombatUnit(DynamicBuffer<UnitSpawnStats> catalog, int idxMiner, int rotation)
         {
-            // Stance lightly reorders preference; all three remain in the mix so the
-            // composition is always sensible and counter-able by the player.
-            //   Defend  -> lead with Frontline (hold the line), then ranged, skirmisher.
-            //   Push    -> lead with Skirmisher (close + commit), then frontline, ranged.
-            //   Harass  -> lead with Ranged (poke), then skirmisher, frontline.
-            int a, b, c;
-            switch (stance)
-            {
-                case CommanderStance.Push:
-                    a = idxSkirmisher; b = idxFrontline; c = idxRanged; break;
-                case CommanderStance.Harass:
-                    a = idxRanged; b = idxSkirmisher; c = idxFrontline; break;
-                default: // Defend
-                    a = idxFrontline; b = idxRanged; c = idxSkirmisher; break;
-            }
+            int count = 0;
+            for (int i = 0; i < catalog.Length; i++)
+                if (i != idxMiner && catalog[i].Role != RoleId.Miner) count++;
+            if (count == 0) return -1;
 
-            // Build the ordered candidate list, skipping roles absent from the catalog.
-            // rotation % 3 spreads picks across the three preferred slots over time.
-            int slot = ((rotation % 3) + 3) % 3;
-            int first = slot == 0 ? a : (slot == 1 ? b : c);
-            if (first >= 0) return first;
-            if (a >= 0) return a;
-            if (b >= 0) return b;
-            if (c >= 0) return c;
+            int target = ((rotation % count) + count) % count; // safe modulo into 0..count-1
+            int seen = 0;
+            for (int i = 0; i < catalog.Length; i++)
+            {
+                if (i == idxMiner || catalog[i].Role == RoleId.Miner) continue;
+                if (seen == target) return i;
+                seen++;
+            }
             return -1;
         }
 
@@ -403,6 +399,29 @@ namespace Bulwark.Sim
                 if (catalog[i].Role == role)
                     return i;
             return -1;
+        }
+
+        /// <summary>
+        /// Count pending (in-flight) TrainOrders on this side's queue whose UnitIndex == roleIndex —
+        /// i.e. units already ordered but not yet spawned. Used so the miner-floor check counts queued
+        /// miners as well as alive ones (a counting fix; introduces no balance value). O(queue length),
+        /// runs only on a reeval tick.
+        /// </summary>
+        private int CountQueuedRole(ref SystemState state, int team, int roleIndex)
+        {
+            if (roleIndex < 0) return 0;
+            foreach (var (q, e) in
+                     SystemAPI.Query<RefRO<TrainQueueTag>>().WithEntityAccess())
+            {
+                if (q.ValueRO.Team != team) continue;
+                if (!state.EntityManager.HasBuffer<TrainOrder>(e)) continue;
+                var orders = state.EntityManager.GetBuffer<TrainOrder>(e);
+                int c = 0;
+                for (int i = 0; i < orders.Length; i++)
+                    if (orders[i].UnitIndex == roleIndex) c++;
+                return c;
+            }
+            return 0;
         }
     }
 }

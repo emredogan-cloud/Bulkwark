@@ -43,7 +43,7 @@ namespace Bulwark.Bootstrap
             public int MatchOutcome;   // -1 = no MatchState singleton; else 0 Ongoing /1 Victory /2 Defeat
             public int GoldP, GoldAI;  // -1 = no GoldStore for that team
             public int Units, UnitsP, UnitsAI, Alive;
-            public int Miners, Mines, MineOccupants;
+            public int Miners, MinersAI, Mines, MineOccupants;
             public int StatueHpP, StatueHpAI, StatueMaxP, StatueMaxAI; // -1 = none
             public int AiStance;       // -1 none; else CommanderStance
             public int AiCount;
@@ -103,7 +103,7 @@ namespace Bulwark.Bootstrap
                 _qMatch   = _em.CreateEntityQuery(ComponentType.ReadOnly<MatchState>());
                 _qGold    = _em.CreateEntityQuery(ComponentType.ReadOnly<GoldStore>());
                 _qUnit    = _em.CreateEntityQuery(ComponentType.ReadOnly<UnitTag>(), ComponentType.ReadOnly<Position>(), ComponentType.ReadOnly<Team>(), ComponentType.ReadOnly<Health>());
-                _qMiner   = _em.CreateEntityQuery(ComponentType.ReadOnly<MinerTag>());
+                _qMiner   = _em.CreateEntityQuery(ComponentType.ReadOnly<MinerTag>(), ComponentType.ReadOnly<Team>());
                 _qMine    = _em.CreateEntityQuery(ComponentType.ReadOnly<MineNode>(), ComponentType.ReadOnly<Position>());
                 _qStatue  = _em.CreateEntityQuery(ComponentType.ReadOnly<StatueTag>(), ComponentType.ReadOnly<StatueState>(), ComponentType.ReadOnly<Position>());
                 _qAi      = _em.CreateEntityQuery(ComponentType.ReadOnly<AICommander>());
@@ -152,7 +152,8 @@ namespace Bulwark.Bootstrap
                 }
             }
 
-            s.Miners = _qMiner.CalculateEntityCount();
+            using (var mt = _qMiner.ToComponentDataArray<Team>(Allocator.Temp))
+            { s.Miners = mt.Length; for (int i = 0; i < mt.Length; i++) if (mt[i].Id == AiTeam) s.MinersAI++; }
 
             using (var mn = _qMine.ToComponentDataArray<MineNode>(Allocator.Temp))
             using (var mp = _qMine.ToComponentDataArray<Position>(Allocator.Temp))
@@ -208,7 +209,7 @@ namespace Bulwark.Bootstrap
             Debug.Log(
                 $"[SIMPROOF] t={Now():0.0}s f={_frame} fps={_fps:0} sys={_s.Systems} " +
                 $"Match={OutcomeName(_s.MatchOutcome)} GoldP={_s.GoldP} GoldAI={_s.GoldAI} " +
-                $"Units={_s.Units}(P{_s.UnitsP}/AI{_s.UnitsAI}) Alive={_s.Alive} Miners={_s.Miners} " +
+                $"Units={_s.Units}(P{_s.UnitsP}/AI{_s.UnitsAI}) Alive={_s.Alive} Miners={_s.Miners}(AI{_s.MinersAI}) " +
                 $"Mines={_s.Mines}(occ{_s.MineOccupants}) StatueP={_s.StatueHpP}/{_s.StatueMaxP} StatueAI={_s.StatueHpAI}/{_s.StatueMaxAI} " +
                 $"AI={StanceName(_s.AiStance)}(x{_s.AiCount}) QueueP={_s.QueueP} QueueAI={_s.QueueAI} Engaged={_s.Engaged} " +
                 $"dUnits={dUnits} dAlive={dAlive} dGoldP={dGoldP} dHealth={dHp:0.0}");
@@ -255,7 +256,7 @@ namespace Bulwark.Bootstrap
                 sb.AppendLine($"MatchState: <b>{OutcomeName(_s.MatchOutcome)}</b>");
                 sb.AppendLine($"Gold  P0={_s.GoldP}   AI={_s.GoldAI}");
                 sb.AppendLine($"Units {_s.Units}  (P0={_s.UnitsP} / AI={_s.UnitsAI})  alive={_s.Alive}");
-                sb.AppendLine($"Miners={_s.Miners}   Mines={_s.Mines} (occ {_s.MineOccupants})");
+                sb.AppendLine($"Miners={_s.Miners} (AI {_s.MinersAI})   Mines={_s.Mines} (occ {_s.MineOccupants})");
                 sb.AppendLine($"Statue P0={_s.StatueHpP}/{_s.StatueMaxP}   AI={_s.StatueHpAI}/{_s.StatueMaxAI}");
                 sb.AppendLine($"AI stance: {StanceName(_s.AiStance)} (x{_s.AiCount})");
                 sb.AppendLine($"Train queue  P0={_s.QueueP}  AI={_s.QueueAI}");
