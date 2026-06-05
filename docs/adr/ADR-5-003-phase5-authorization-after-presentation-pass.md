@@ -1,7 +1,10 @@
 # ADR-5-003 — Phase 5 Authorization After Successful Presentation Pass
 
-- **Status:** **PROPOSED — PENDING OWNER DECISION** (a material contradiction is surfaced; no constraint waived,
-  no PASS fabricated, no roadmap-Phase-5 execution claimed)
+- **Status:** **ACCEPTED — Option A (Production Presentation phase)** (owner decision, 2026-06-05). The requested
+  presentation/professionalization work proceeds as a **Production Presentation phase — explicitly NOT roadmap
+  Phase 5.** GATE 1 (FUN), GATE 5 (scale-or-stop), and the ADR-5-002 LTV floor remain **open/binding and unwaived**;
+  roadmap Phase 5 (soft launch/scale) is **NOT begun** and nothing is mislabeled as soft-launch progress. No
+  gameplay/economy/AI/balance/commander-budget/monetization/canon change. No fabricated PASS.
 - **Date:** 2026-06-05
 - **Phase:** 4/Presentation → 5 transition (roadmap Phase 5 = *Soft Launch & Tuning — SCALE-OR-STOP*)
 - **Relates to:** ADR-5-001 (conditional Phase-5 authorization), ADR-5-002 (GATE-5 LTV floor — still PROPOSED),
