@@ -60,6 +60,7 @@ namespace Bulwark.Bootstrap
         private Camera _cam;
         private bool _camConfigured;
         private float _logTimer;
+        private SpriteRenderer _bg; // battlefield background (covers the ortho view, behind all proxies)
 
         private static readonly Color ColP = new Color(0.25f, 0.5f, 1f);
         private static readonly Color ColAI = new Color(1f, 0.3f, 0.25f);
@@ -164,7 +165,7 @@ namespace Bulwark.Bootstrap
 
             // Size: normalize sprite to a per-kind target world height; units/miners squash a little with HP.
             float spriteH = spr.bounds.size.y; if (spriteH < 0.01f) spriteH = 1f;
-            float targetH = kind == Kind.Statue ? 2.6f : kind == Kind.Mine ? 1.1f : 1.3f;
+            float targetH = kind == Kind.Statue ? 3.0f : kind == Kind.Mine ? 1.3f : 1.7f; // bigger = more readable
             float baseScale = targetH / spriteH;
             float vSquash = (kind == Kind.Statue || kind == Kind.Mine) ? 1f : (0.7f + 0.3f * hpFrac);
             px.Go.transform.localScale = new Vector3(baseScale, baseScale * vSquash, baseScale);
@@ -251,6 +252,25 @@ namespace Bulwark.Bootstrap
             _cam.backgroundColor = new Color(0.10f, 0.12f, 0.14f);
             _cam.nearClipPlane = 0.1f;
             _cam.farClipPlane = 100f;
+
+            // Battlefield background: stretch the placeholder battle bg to cover the ortho view, behind units.
+            Sprite bgSpr = PlaceholderAssets.Instance != null ? PlaceholderAssets.Instance.Get("bg_battle") : null;
+            if (bgSpr != null)
+            {
+                if (_bg == null)
+                {
+                    var bgo = new GameObject("battlefield_bg");
+                    _bg = bgo.AddComponent<SpriteRenderer>();
+                    _bg.sortingOrder = -100; // behind all unit/mine/statue proxies
+                }
+                _bg.sprite = bgSpr; _bg.color = Color.white;
+                float viewH = _cam.orthographicSize * 2f, viewW = viewH * Mathf.Max(0.1f, aspect);
+                float bw = bgSpr.bounds.size.x, bh = bgSpr.bounds.size.y;
+                if (bw < 0.01f) bw = 1f; if (bh < 0.01f) bh = 1f;
+                _bg.transform.position = new Vector3(cx, cy, 5f); // z>0 = behind the z=0 plane (camera looks +Z)
+                _bg.transform.localScale = new Vector3((viewW * 1.1f) / bw, (viewH * 1.1f) / bh, 1f);
+            }
+
             if (!_camConfigured) { _camConfigured = true; Debug.Log("[PROXY] camera configured to frame the battlefield (orthographic)."); }
         }
     }

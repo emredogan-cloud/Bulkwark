@@ -241,6 +241,7 @@ namespace Bulwark.Bootstrap
 
         private void OnGUI()
         {
+            if (PresentationState.SuppressDebugHud) return; // hidden while a uGUI menu/end screen is up
             EnsureGui();
 
             // ---- stats panel (top-left) ----

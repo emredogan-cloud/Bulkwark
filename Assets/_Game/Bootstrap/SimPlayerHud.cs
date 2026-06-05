@@ -245,6 +245,7 @@ namespace Bulwark.Bootstrap
 
         private void OnGUI()
         {
+            if (PresentationState.SuppressDebugHud) return; // hidden while a uGUI menu/end screen is up
             EnsureGui();
             float w = Mathf.Min(470f, Screen.width * 0.46f);
             float x = 8f;
