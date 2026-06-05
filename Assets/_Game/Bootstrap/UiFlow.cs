@@ -38,7 +38,7 @@ namespace Bulwark.Bootstrap
         private Screen _screen;
         private float _splashT;
         private GameObject _panelSplash, _panelMenu, _panelMode, _panelEnd;
-        private Text _endTitle, _endSummary;
+        private Text _endTitle, _endSummary, _muteLabel;
         private bool _built;
         private World _w;
         private EntityManager _em;
@@ -100,10 +100,10 @@ namespace Bulwark.Bootstrap
         private void Show(Screen s)
         {
             _screen = s;
-            if (_panelSplash) _panelSplash.SetActive(s == Screen.Splash);
-            if (_panelMenu) _panelMenu.SetActive(s == Screen.Menu);
-            if (_panelMode) _panelMode.SetActive(s == Screen.ModeSelect);
-            if (_panelEnd) _panelEnd.SetActive(s == Screen.End);
+            ActivatePanel(_panelSplash, s == Screen.Splash);
+            ActivatePanel(_panelMenu, s == Screen.Menu);
+            ActivatePanel(_panelMode, s == Screen.ModeSelect);
+            ActivatePanel(_panelEnd, s == Screen.End);
             // Menus freeze the battle; Match/End let it run.
             Time.timeScale = (s == Screen.Match || s == Screen.End) ? 1f : 0f;
             // The textured uGUI BattleHud now provides the in-match UI, so keep the IMGUI debug overlays
@@ -118,6 +118,29 @@ namespace Bulwark.Bootstrap
                 else if (s == Screen.Splash || s == Screen.Menu || s == Screen.ModeSelect) au.PlayMenuMusic();
             }
             Debug.Log("[UI] screen = " + s);
+        }
+
+        // Fade a panel in (unscaled time — menus run at timeScale=0) when it becomes the active screen.
+        private void ActivatePanel(GameObject p, bool on)
+        {
+            if (p == null) return;
+            if (!on) { p.SetActive(false); return; }
+            p.SetActive(true);
+            var cg = p.GetComponent<CanvasGroup>();
+            if (cg != null) { cg.alpha = 0f; StartCoroutine(FadeIn(cg)); }
+        }
+
+        private System.Collections.IEnumerator FadeIn(CanvasGroup cg)
+        {
+            const float dur = 0.22f;
+            float t = 0f;
+            while (t < dur && cg != null)
+            {
+                t += Time.unscaledDeltaTime;
+                cg.alpha = Mathf.Clamp01(t / dur);
+                yield return null;
+            }
+            if (cg != null) cg.alpha = 1f;
         }
 
         private void StartMatch(string mode)
@@ -171,6 +194,7 @@ namespace Bulwark.Bootstrap
             go.transform.SetParent(_canvas.transform, false);
             var rt = go.AddComponent<RectTransform>();
             rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+            go.AddComponent<CanvasGroup>(); // for screen fade-in transitions
             var img = go.AddComponent<Image>();
             var s = Spr(bgSprite);
             if (s != null) { img.sprite = s; img.color = Color.white; img.preserveAspect = false; }
@@ -190,9 +214,14 @@ namespace Bulwark.Bootstrap
         {
             var p = FullPanel("MainMenu", "bg_menu", Dark);
             Label(p.transform, "BULWARK", 96, new Vector2(0, 700), new Vector2(900, 160), TextAnchor.MiddleCenter, Color.white);
-            Button(p.transform, "PLAY", new Vector2(0, 200), () => Show(Screen.ModeSelect), IronBlue);
-            Button(p.transform, "QUIT", new Vector2(0, -40), () => { }, new Color(0.3f,0.3f,0.35f));
-            Label(p.transform, "Iron Pact  vs  Ashen Horde", 34, new Vector2(0, -260), new Vector2(900, 80), TextAnchor.MiddleCenter, new Color(1,1,1,0.7f));
+            Button(p.transform, "PLAY", new Vector2(0, 240), () => Show(Screen.ModeSelect), IronBlue);
+            _muteLabel = Button(p.transform, "SOUND: ON", new Vector2(0, 60), () =>
+            {
+                var a = AudioManager.Instance;
+                if (a != null) { a.ToggleMute(); _muteLabel.text = a.Muted ? "SOUND: OFF" : "SOUND: ON"; }
+            }, new Color(0.25f, 0.30f, 0.42f));
+            Button(p.transform, "QUIT", new Vector2(0, -120), () => Application.Quit(), new Color(0.3f, 0.3f, 0.35f));
+            Label(p.transform, "Iron Pact  vs  Ashen Horde", 34, new Vector2(0, -320), new Vector2(900, 80), TextAnchor.MiddleCenter, new Color(1,1,1,0.7f));
             return p;
         }
 
@@ -228,7 +257,7 @@ namespace Bulwark.Bootstrap
             return t;
         }
 
-        private void Button(Transform parent, string text, Vector2 pos, UnityEngine.Events.UnityAction onClick, Color tint)
+        private Text Button(Transform parent, string text, Vector2 pos, UnityEngine.Events.UnityAction onClick, Color tint)
         {
             var go = new GameObject("Btn_" + text);
             go.transform.SetParent(parent, false);
@@ -240,8 +269,16 @@ namespace Bulwark.Bootstrap
             else img.color = tint;
             var btn = go.AddComponent<Button>();
             btn.targetGraphic = img;
+            // Built-in press/hover/disabled feedback (no extra scripts).
+            var cb = btn.colors;
+            cb.normalColor = Color.white;
+            cb.highlightedColor = new Color(1.1f, 1.1f, 1.1f, 1f);
+            cb.pressedColor = new Color(0.75f, 0.75f, 0.8f, 1f);
+            cb.disabledColor = new Color(0.6f, 0.6f, 0.6f, 0.5f);
+            cb.fadeDuration = 0.08f;
+            btn.colors = cb;
             btn.onClick.AddListener(() => { AudioManager.Instance?.Click(); onClick?.Invoke(); });
-            Label(go.transform, text, 48, Vector2.zero, new Vector2(620, 140), TextAnchor.MiddleCenter, Color.white);
+            return Label(go.transform, text, 48, Vector2.zero, new Vector2(620, 140), TextAnchor.MiddleCenter, Color.white);
         }
 
         private static void SetPanelBg(GameObject p, string key)

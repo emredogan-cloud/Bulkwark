@@ -44,6 +44,7 @@ namespace Bulwark.Bootstrap
         private Sprite _white, _btnSprite, _goldIcon;
         private GameObject _root;
         private bool _built;
+        private Rect _lastSafe;
 
         private Text _goldText, _unitText;
         private Image _hpFillP, _hpFillAI;
@@ -76,6 +77,7 @@ namespace Bulwark.Bootstrap
             if (!_built) return;
             bool inMatch = PresentationState.InMatch;
             if (_root.activeSelf != inMatch) _root.SetActive(inMatch);
+            if (inMatch && Screen.safeArea != _lastSafe) ApplySafeArea(); // re-apply on rotation / resolution change
             if (!inMatch) return;
             if (!EnsureWorld()) return;
 
@@ -170,6 +172,7 @@ namespace Bulwark.Bootstrap
             }
 
             _root = NewRect("HudRoot", cgo.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            ApplySafeArea(); // inset the HUD to the device safe area (notch / nav-bar)
 
             // ---- Top bar (gold chip + two statue-HP bars + unit count) ----
             var top = NewRect("TopBar", _root.transform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -20), new Vector2(0, 240));
@@ -254,6 +257,19 @@ namespace Bulwark.Bootstrap
         }
 
         // ---------------- tiny uGUI builders ----------------
+        // Inset the HUD content to the device safe area (notch / nav-bar) so the bars/buttons stay reachable.
+        private void ApplySafeArea()
+        {
+            if (_root == null) return;
+            var sa = Screen.safeArea;
+            float w = Mathf.Max(1, Screen.width), h = Mathf.Max(1, Screen.height);
+            var rt = (RectTransform)_root.transform;
+            rt.anchorMin = new Vector2(sa.xMin / w, sa.yMin / h);
+            rt.anchorMax = new Vector2(sa.xMax / w, sa.yMax / h);
+            rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+            _lastSafe = sa;
+        }
+
         private static Sprite MakeWhite()
         {
             var t = new Texture2D(4, 4); var c = new Color[16];

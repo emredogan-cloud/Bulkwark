@@ -46,6 +46,7 @@ namespace Bulwark.Bootstrap
         private readonly AudioSource _src;
         public SfxChannel(AudioSource src) { _src = src; _src.loop = false; _src.playOnAwake = false; _src.spatialBlend = 0f; }
         public void PlayOneShot(AudioClip clip, float vol) { if (clip != null) _src.PlayOneShot(clip, Mathf.Clamp01(vol)); }
+        public void SetVolume(float v) => _src.volume = Mathf.Clamp01(v);
     }
 
     /// <summary>Presentation audio façade: menu/battle music, victory/defeat stingers, and UI/combat SFX.</summary>
@@ -129,6 +130,17 @@ namespace Bulwark.Bootstrap
         }
 
         // ---------------- sfx (called by UiFlow / BattleHud / SimProxyRenderer) ----------------
+        private bool _muted;
+        public bool Muted => _muted;
+        /// <summary>Mute/unmute both channels (presentation setting; no gameplay effect).</summary>
+        public void ToggleMute()
+        {
+            _muted = !_muted;
+            _music?.SetVolume(_muted ? 0f : 0.6f);
+            _sfx?.SetVolume(_muted ? 0f : 1f);
+            Debug.Log("[AUDIO] muted=" + _muted);
+        }
+
         public void Click() => _sfx?.PlayOneShot(Clip("sfx_click"), 0.8f);
         public void Train() => _sfx?.PlayOneShot(Clip("sfx_train"), 0.9f);
 
