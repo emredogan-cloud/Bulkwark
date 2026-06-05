@@ -106,8 +106,10 @@ namespace Bulwark.Bootstrap
             if (_panelEnd) _panelEnd.SetActive(s == Screen.End);
             // Menus freeze the battle; Match/End let it run.
             Time.timeScale = (s == Screen.Match || s == Screen.End) ? 1f : 0f;
-            // Show the IMGUI debug overlays ONLY during Match; hide them under Splash/Menu/ModeSelect/End.
-            PresentationState.SuppressDebugHud = (s != Screen.Match);
+            // The textured uGUI BattleHud now provides the in-match UI, so keep the IMGUI debug overlays
+            // hidden throughout the front-end (observability remains via logcat); flag Match for BattleHud.
+            PresentationState.SuppressDebugHud = true;
+            PresentationState.InMatch = (s == Screen.Match);
             Debug.Log("[UI] screen = " + s);
         }
 

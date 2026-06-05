@@ -11,8 +11,14 @@ namespace Bulwark.Bootstrap
     /// <summary>Shared visibility gate for the IMGUI debug overlays (presentation-only).</summary>
     public static class PresentationState
     {
-        /// <summary>When true, SimDebugOverlay/SimPlayerHud skip their OnGUI draw (set by UiFlow during
-        /// Splash/Menu/ModeSelect/Victory/Defeat; cleared during Match). Default false = shown.</summary>
+        /// <summary>When true, SimDebugOverlay/SimPlayerHud skip their OnGUI draw. With the textured uGUI
+        /// BattleHud in place, UiFlow keeps this true whenever the front-end is active (the IMGUI debug
+        /// overlays are replaced on-screen; observability remains via logcat). Default false = shown, so a
+        /// debug-only run without UiFlow still shows them.</summary>
         public static bool SuppressDebugHud;
+
+        /// <summary>True only while the uGUI Match screen is active — gates the textured BattleHud (gold,
+        /// statue-HP bars, troop-production buttons). Set by UiFlow. Default false.</summary>
+        public static bool InMatch;
     }
 }
