@@ -1,5 +1,43 @@
 # BULWARK — GATE 1 (FUN) Validation Report
 
+> ## 🔁 RE-GATE UPDATE (2026-06-05, build `fda1c95`, CI run 26989904826 GREEN) — VERDICT UNCHANGED: **GATE 1 = FAIL**
+>
+> After fixing the *identified* AI economy bug (BasicAI now counts in-flight miners) **plus** a second AI bug found
+> in review (roster-agnostic combat training so the AI can field its full Ashen roster), and re-running the full
+> match on device, the verdict is **still FAIL** — but the picture changed and the **root cause is now deeper and
+> proven, not the identified counting bug.**
+>
+> **What improved (real progress):** the match is **no longer a 9-vs-1 walkover** — it is now **two-sided**: both
+> statues are ground down roughly *evenly* (StatueP 1000→~274 **and** StatueAI 1000→~274), i.e. AI units reach and
+> damage the player statue. The roster-agnostic fix + the AI advance driver produce genuine two-sided combat.
+>
+> **Why it still FAILS (evidence, `rg_logcat.txt`):** **both economies collapse**, so the fight is a tiny-army
+> attrition stalemate that only ends via the 120s debug probe — not a dynamic, fun RTS match:
+> - **AI never establishes mining: `MinersAI=0` and `GoldAI=5` for the entire match.** The in-flight-counting fix
+>   did NOT fix this → it was **not the root cause.** Confirmed deeper cause: there are **two AI training sources** —
+>   `BasicAISystem` (economy-first) *and* `SquadAISystem` (Phase-2.6, `SquadAI.cs:560` also appends `TrainOrders`).
+>   An expensive combat order (Ashen Slinger 95g) reaches the FIFO **head**, drains `GoldAI 100→5`, and **blocks the
+>   cheaper miner (45g) behind it** (single-head blocking queue) → no miner ever spawns → no income → permanent
+>   stall. A BasicAI-only fix cannot override SquadAI's spending.
+> - **Miners die and are not replaced.** `TargetingSystem` (Targeting.cs:101/143 `WithAll<UnitTag,Health>`) does
+>   **not exclude `MinerTag`**, so miners auto-acquire targets and walk into combat and die — the player's economy
+>   rose (`GoldP→81`, 2 miners, occ2) then **collapsed** (`Miners 2→0`, `occ→0`, `GoldP→0`) when its miners were
+>   killed. The advance-exclusion added this round only stops the *explicit* ADVANCE, not auto-targeting; and the
+>   debug auto-demo trains miners only once, so a dead economy never recovers.
+>
+> **Net:** tiny armies (≤2 units/side), both economies at ~0, even statue grind resolved by the probe = **not fun →
+> FAIL.** The identified bug is fixed (correctly, no balance change) and the walkover is gone, but combat-fun still
+> isn't demonstrated. **Real root causes for a future pass (multi-system, beyond the single identified bug, NOT done
+> here):** (1) coordinate BasicAI + SquadAI so combat orders don't starve the miner economy (or make the queue not
+> head-block the economy); (2) exclude miners from targeting/combat (and replace dead miners) so economies sustain.
+> These are AI/sim-pipeline changes; per instruction I **stop at the new verdict** rather than expand scope further.
+>
+> *(The original V2 verdict + full method/evidence are preserved below for history.)*
+
+---
+
+# BULWARK — GATE 1 (FUN) Validation Report  *(original V2 entry, build f698cb8)*
+
 **Date:** 2026-06-05 · **Gate:** roadmap §13 Phase 1 **GATE 1 = "is the combat FUN?"** ("combat must be fun
 before meta is built"). **Track:** pre-Phase-5 GATE-1 validation (V2). **Device:** Xiaomi Redmi Note 11R,
 Android 13, arm64-v8a (`jfzxugsgnnvsrsg6`). **Build:** V2 `f698cb8`, CI run **26972255935** GREEN.
