@@ -58,6 +58,7 @@ namespace Bulwark.Bootstrap
         {
             public GameObject Go;
             public SpriteRenderer Sr;
+            public SpriteAnimator Anim;   // procedural animator (units only; null otherwise) — presentation-only
             public Kind Kind;
             public float LastHp;
             public float Flash;   // seconds of damage-flash remaining
@@ -175,6 +176,10 @@ namespace Bulwark.Bootstrap
                 Debug.Log($"[PROXY] SPAWN {kind} proxy (entity index {e.Index}).");
             }
 
+            // Lazy-attach the animator if it was missed at create (RuntimeInitialize boot-order race) — units only.
+            if (px.Anim == null && (kind == Kind.UnitP || kind == Kind.UnitAI) && AnimationManager.Instance != null)
+                px.Anim = AnimationManager.Instance.Attach(px.Go, px.Sr);
+
             // Combat viz: a drop in HP since last frame -> flash white briefly (+ throttled hit SFX + impact VFX).
             if (curHp >= 0f && curHp < px.LastHp - 0.01f)
             {
@@ -182,6 +187,7 @@ namespace Bulwark.Bootstrap
                 if (PresentationState.InMatch)
                 {
                     AudioManager.Instance?.Hit();
+                    px.Anim?.NotifyHit(); // procedural recoil reaction (units only)
                     var fxPos = new Vector3(p.x, p.y, 0f);
                     if (kind == Kind.Statue) VfxManager.Instance?.StatueDamage(fxPos);
                     else VfxManager.Instance?.Impact(fxPos);
@@ -248,7 +254,10 @@ namespace Bulwark.Bootstrap
             var go = new GameObject("proxy_" + kind);
             var sr = go.AddComponent<SpriteRenderer>(); // default Sprites material is URP-compatible
             sr.sprite = Fallback();
-            return new Proxy { Go = go, Sr = sr, Kind = kind };
+            var proxy = new Proxy { Go = go, Sr = sr, Kind = kind };
+            // Attach the procedural animator to units only (idle/walk/hit/death) — presentation-only, read-only.
+            if (kind == Kind.UnitP || kind == Kind.UnitAI) proxy.Anim = AnimationManager.Instance?.Attach(go, sr);
+            return proxy;
         }
 
         private void CullStale()
@@ -262,14 +271,17 @@ namespace Bulwark.Bootstrap
             {
                 if (_proxies.TryGetValue(dead[i], out var px))
                 {
+                    bool isUnit = px.Kind == Kind.UnitP || px.Kind == Kind.UnitAI;
                     Vector3 dpos = px.Go != null ? px.Go.transform.position : Vector3.zero;
-                    if (px.Go != null) Destroy(px.Go);
-                    // Unit death feedback (Match-only) — presentation reaction to a culled unit proxy (SFX + puff VFX).
-                    if (PresentationState.InMatch && (px.Kind == Kind.UnitP || px.Kind == Kind.UnitAI))
+                    // Unit death feedback (Match-only) — presentation reactions to a culled unit proxy.
+                    if (PresentationState.InMatch && isUnit)
                     {
                         AudioManager.Instance?.Death();
                         VfxManager.Instance?.DeathPuff(dpos);
                     }
+                    // Play the death tween (animator self-destructs) in-match; otherwise destroy immediately.
+                    if (px.Anim != null && px.Go != null && PresentationState.InMatch && isUnit) px.Anim.PlayDeath();
+                    else if (px.Go != null) Destroy(px.Go);
                 }
                 _proxies.Remove(dead[i]);
                 Debug.Log($"[PROXY] DEATH/cull proxy (entity index {dead[i].Index}).");
