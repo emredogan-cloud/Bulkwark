@@ -14,7 +14,7 @@ GREEN → device validation. **Stop point:** this report.
 | Phase E — presentation integration (sprite battlefield + uGUI flow) | ✅ implemented & committed (`c11f48e`, `b218e59`) |
 | Pre-push review (compile + presentation-safety + runtime), 3 lenses | ✅ PASS (0 blockers after the metas fix) |
 | CI/CD (IL2CPP Android build + compile tests) | ✅ GREEN (run `26993253252`, sha `b218e59`) |
-| **On-device (Android) screenshot validation** | ⚠️ **PENDING — test device physically disconnected mid-run** (see §6); build is CI- + review-validated, on-device capture to be done on reconnect |
+| **On-device (Android) screenshot validation** | ✅ **DONE on reconnect** (run `b218e59`): 13/13 sprites loaded, full Splash→Menu→ModeSelect→Match→Victory flow executed; menus/end look game-like; battlefield sprites render but faint (see §6) |
 | Deferred GATE-1 gameplay bugs | ✅ untouched / preserved (documented in `PROJECT_STATE_ANALYSIS.md` §10) |
 
 ## 1. Imported assets (curated placeholders — © ripped, DEV-ONLY)
@@ -67,15 +67,27 @@ Not imported (per `ASSET_IMPORT_RISK_REPORT.md`): Spine rigs (deferred — paid 
   handled via the `allCameras` fallback; bg-refresh-on-ready works).
 - **On-device:** see §6 (could not be captured this run — device disconnected).
 
-## 6. ⚠️ Device validation — PENDING (hardware disconnection)
-The Android test device (Xiaomi Redmi Note 11R) **physically disconnected during this validation run** (adb lost
-it; `lsusb` then showed no device — an unplug/power event, not a software fault). It had dropped earlier in the
-session and was recovered via an adb-server restart, but it is now physically absent and cannot be recovered from
-here. Therefore **fresh on-device screenshots of the new Splash/Menu/Match/Victory flow were not captured this
-run.** No screenshots are fabricated. The build that would be installed is the **CI-GREEN, review-PASS** APK
-(`b218e59`). **To complete:** reconnect the device (USB-debugging authorized) and I can install + capture the
-Splash → Main Menu → Mode Select → Match (sprite battlefield) → Victory/Defeat screenshots + logcat (the harness
-to do so is the same one used all session). This is the one open item.
+## 6. Device validation — DONE (Xiaomi Redmi Note 11R, on reconnect)
+Installed the CI-GREEN APK (`b218e59`) on the reconnected device and drove the full flow via taps. **Evidence**
+(`runtime/device_validation/pres_*.png` + `pres_logcat.txt`):
+- **Asset load:** `[ASSETS] placeholder sprites ready: 13/13 loaded.` — all StreamingAssets placeholders loaded at
+  runtime on Android (the UnityWebRequestTexture path works on-device).
+- **Flow:** `[UI]` log shows `UiFlow booted → Splash → Menu → ModeSelect → StartMatch mode=Classic → Match → End`;
+  the match resolved (`Match=Victory`, 37 frames) and the End screen displayed.
+- **UI screenshots (game-like):** `pres_2_modeselect.png` = a real **"CHOOSE MODE"** screen (textured background +
+  CLASSIC/TOURNAMENT/ENDLESS/BACK buttons); `pres_5_match3.png`/`pres_6_end.png` = a **"VICTORY"** end screen
+  (victory background + "…statue has fallen." + MAIN MENU button). The Splash→Menu→ModeSelect→Match→Victory flow
+  is real and navigable by touch.
+- **Battlefield:** `[PROXY]` shows the sprite renderer active (camera framed; proxies 4→7); units/mine/statue
+  render as **sprites** (not primitives). `pres_3_match.png`/`pres_4_match2.png` show the in-match battlefield.
+
+**Honest visual findings (polish gaps, NOT failures):** (1) the **IMGUI debug overlays** (`SimDebugOverlay` /
+`SimPlayerHud`) **bleed on top of the uGUI menus/end screens** (OnGUI always draws over uGUI) — the menus read
+clearly but look un-clean; they should be hidden while the uGUI flow is in a menu/end state. (2) The **battle
+background placeholder (`bg_battle`) is near-blank/dark** (3 KB source) and units are small/few, so the
+battlefield is faint vs the strong menu/end screens — swap for a real battlefield background + optionally hide the
+debug HUD in-match. Both are quick presentation-layer follow-ups (no gameplay impact). The core objective —
+**launches and plays through a recognizable game flow with sprite art instead of debug primitives** — is met.
 
 ## 7. Remaining gaps (placeholder → production)
 - **On-device screenshots** (above) — pending device reconnect.
@@ -99,11 +111,14 @@ pass is removable (delete `PlaceholderAssets.cs` + `UiFlow.cs` + `StreamingAsset
 `SimProxyRenderer.cs`, drop the texture module).
 
 ## 9. Verdict
-The presentation pass is **implemented, committed, CI-GREEN, and review-validated**: the build launches through a
-real game flow (Splash → Menu → Mode Select → Match → Victory/Defeat) with a **sprite battlefield** instead of
-debug primitives — transforming the debug prototype into a visually recognizable game **without touching gameplay**.
-The single open item is **on-device screenshot capture**, blocked only by the test device being physically
-disconnected; it can be completed immediately on reconnect.
+The presentation pass is **implemented, committed, CI-GREEN, review-validated, and DEVICE-VALIDATED**: on the
+Redmi Note 11R the build loads 13/13 placeholder sprites and launches through a real game flow (Splash → Main
+Menu → Mode Select → Match → Victory) with a **sprite battlefield** instead of debug primitives — transforming the
+debug prototype into a visually recognizable, navigable game **without touching gameplay** (no ECS/sim/balance/AI/
+economy change; deferred GATE-1 bugs preserved; fully removable). The menu and end screens read as a real game;
+two **presentation-only polish follow-ups** remain (hide the IMGUI debug overlays during the uGUI flow; swap the
+near-blank battle background) — neither affects gameplay, and both are quick. All ripped placeholders are
+**dev-only and must be replaced with original/licensed art before any release or public playtest.**
 
 **STOPPING after this report per instruction. No Phase 5. No roadmap/canon/balance change. Deferred gameplay bugs
 preserved. Placeholder assets are dev-only and must be replaced before release.**
