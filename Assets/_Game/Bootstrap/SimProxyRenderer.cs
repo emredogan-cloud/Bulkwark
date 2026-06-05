@@ -42,7 +42,7 @@ namespace Bulwark.Bootstrap
         private sealed class Proxy
         {
             public GameObject Go;
-            public MeshRenderer Mr;
+            public SpriteRenderer Sr;
             public Kind Kind;
             public float LastHp;
             public float Flash;   // seconds of damage-flash remaining
@@ -157,55 +157,50 @@ namespace Bulwark.Bootstrap
             // Position on the z=0 battlefield plane.
             px.Go.transform.position = new Vector3(p.x, p.y, 0f);
 
-            // Health viz: scale (units/statues shrink as damaged). Mines fixed size.
-            float s;
-            switch (kind)
-            {
-                case Kind.Statue: s = 1.6f; px.Go.transform.localScale = new Vector3(1.4f, 1.2f + 1.8f * hpFrac, 1.4f); break;
-                case Kind.Mine:   s = 0.9f; px.Go.transform.localScale = new Vector3(s, s, s); break;
-                default:          px.Go.transform.localScale = new Vector3(0.7f, 0.5f + 0.9f * hpFrac, 0.7f); break;
-            }
+            // Sprite: real placeholder art when loaded (StreamingAssets), else a white fallback (never invisible).
+            Sprite spr = PlaceholderAssets.Instance != null ? PlaceholderAssets.Instance.Get(SpriteKey(kind)) : null;
+            if (spr == null) spr = Fallback();
+            px.Sr.sprite = spr;
 
-            // Color: team/kind base, dimmed by HP, white when flashing (combat hit).
+            // Size: normalize sprite to a per-kind target world height; units/miners squash a little with HP.
+            float spriteH = spr.bounds.size.y; if (spriteH < 0.01f) spriteH = 1f;
+            float targetH = kind == Kind.Statue ? 2.6f : kind == Kind.Mine ? 1.1f : 1.3f;
+            float baseScale = targetH / spriteH;
+            float vSquash = (kind == Kind.Statue || kind == Kind.Mine) ? 1f : (0.7f + 0.3f * hpFrac);
+            px.Go.transform.localScale = new Vector3(baseScale, baseScale * vSquash, baseScale);
+
+            // Tint: light team/kind color (faction read), white flash on hit, grey-dim as HP drops.
             Color baseCol = kind == Kind.UnitP ? ColP : kind == Kind.UnitAI ? ColAI : kind == Kind.Mine ? ColMine : ColStatue;
-            Color c = px.Flash > 0f ? Color.white : Color.Lerp(baseCol * 0.4f, baseCol, hpFrac);
-            _mpb.Clear();
-            _mpb.SetColor("_BaseColor", c); // URP default material
-            _mpb.SetColor("_Color", c);     // built-in fallback
-            px.Mr.SetPropertyBlock(_mpb);
+            float tintAmt = kind == Kind.Mine ? 0.15f : kind == Kind.Statue ? 0.25f : 0.4f;
+            Color c = px.Flash > 0f ? Color.white
+                    : Color.Lerp(Color.Lerp(Color.white, baseCol, tintAmt), Color.gray, (1f - hpFrac) * 0.5f);
+            px.Sr.color = c;
+            px.Sr.sortingOrder = kind == Kind.Statue ? 0 : kind == Kind.Mine ? 1 : 2; // units in front
         }
 
-        private Material _proxyMat;
-
-        /// <summary>Shared URP material for all proxies. CreatePrimitive's DEFAULT material is the built-in
-        /// Standard shader, which renders MAGENTA under URP and ignores the MPB _BaseColor tint — so we must
-        /// assign an actual URP shader here for the team colors to show. Per-proxy color is then applied via
-        /// the MaterialPropertyBlock (_BaseColor) over this shared material.</summary>
-        private Material ProxyMat()
+        private Sprite _fallback;
+        /// <summary>An 8×8 white fallback sprite (created in code) so a proxy renders a colored square before the
+        /// StreamingAssets placeholder PNGs finish loading / if a load fails — never invisible.</summary>
+        private Sprite Fallback()
         {
-            if (_proxyMat != null) return _proxyMat;
-            Shader sh = Shader.Find("Universal Render Pipeline/Unlit");
-            if (sh == null) sh = Shader.Find("Universal Render Pipeline/Lit");
-            if (sh == null) sh = Shader.Find("Sprites/Default");
-            if (sh == null) sh = Shader.Find("Unlit/Color");
-            _proxyMat = sh != null ? new Material(sh) : null;
-            Debug.Log("[PROXY] proxy material shader = " + (sh != null ? sh.name : "NULL (kept default — may render magenta)"));
-            return _proxyMat;
+            if (_fallback != null) return _fallback;
+            var t = new Texture2D(8, 8);
+            var cols = new Color[64];
+            for (int i = 0; i < 64; i++) cols[i] = Color.white;
+            t.SetPixels(cols); t.Apply();
+            _fallback = Sprite.Create(t, new Rect(0, 0, 8, 8), new Vector2(0.5f, 0.5f), 100f);
+            return _fallback;
         }
+
+        private static string SpriteKey(Kind k) =>
+            k == Kind.UnitP ? "unit_player" : k == Kind.UnitAI ? "unit_ai" : k == Kind.Mine ? "mine" : "statue";
 
         private Proxy CreateProxy(Kind kind)
         {
-            PrimitiveType pt = kind == Kind.Mine ? PrimitiveType.Cube
-                             : kind == Kind.Statue ? PrimitiveType.Cylinder
-                             : PrimitiveType.Capsule;
-            var go = GameObject.CreatePrimitive(pt);
-            go.name = "proxy_" + kind;
-            var col = go.GetComponent<Collider>(); if (col != null) Destroy(col); // debug visual only; no physics
-            var mr = go.GetComponent<MeshRenderer>();
-            var m = ProxyMat(); if (m != null) mr.sharedMaterial = m; // URP shader so the team-color tint shows (not magenta)
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            mr.receiveShadows = false;
-            return new Proxy { Go = go, Mr = mr, Kind = kind };
+            var go = new GameObject("proxy_" + kind);
+            var sr = go.AddComponent<SpriteRenderer>(); // default Sprites material is URP-compatible
+            sr.sprite = Fallback();
+            return new Proxy { Go = go, Sr = sr, Kind = kind };
         }
 
         private void CullStale()
