@@ -51,14 +51,16 @@ namespace Bulwark.Sim
         // The enemy Statue is a FALLBACK objective: weighted well below any live enemy unit so units
         // engage units first and only converge on the base when no unit is in their neighbourhood
         // (§11 objective). It is a positional weight, not a combat/balance number (§15.6).
-        // GATE1-balance (Option B): raised 0.01 → 40.0 (adversarial review: the residual risk is "too timid", so
-        // hedge UP within the endorsed 40-60 band; line combat stays dominant — a unit still fights a melee enemy
-        // until the statue is within ~6u). Score is weight/(1+distSq), so a NEAR enemy (tiny distSq)
+        // GATE1-balance (Option B): raised 0.01 → 120.0. Build-1 device validation at 40 was still TOO TIMID
+        // (only 1/20 organic resolutions; the dense reinforced line kept units engaged within ~4u so they never
+        // committed to the base). 120 lets a mid-field unit commit to the enemy base over enemies beyond ~2.4u
+        // → frequent breakthroughs. Match length stays mobile (floored by the ~48s march-to-contact + the cross to
+        // the enemy wall), so this is NOT a trivial race. Score is weight/(1+distSq), so a NEAR enemy (tiny distSq)
         // is ALWAYS preferred and units still fight the line; the higher weight only lets a unit COMMIT to the
         // enemy base over a DISTANT enemy (gradient: at mid-field a unit still engages enemies within ~5 units;
         // once it pushes past the sparse line the shrinking statue distance makes it commit harder → breakthrough).
         // Symmetric (both sides) → fair. Converts the standing numbers/row-coverage edge into organic resolution.
-        private const float StatueBonus = 40.0f;
+        private const float StatueBonus = 120.0f;
 
         // Bucket key: enemyTeam, row, xbin packed into one int for the hash map.
         private static int Key(int team, int row, int xbin, int xbins, int rows)

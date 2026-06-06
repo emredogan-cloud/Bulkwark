@@ -31,6 +31,21 @@ Economy / mines / startingGold; unit HP/damage/range/cost/trainTime; §4 counter
 cosmetic-safety; monetization; presentation. Sudden-death/escalation (Option A) NOT implemented — kept as a
 documented contingency only if validation under-resolves.
 
+## Build-1 result → Build-2 retune (the "repair" step)
+**Build-1** (`52e1504`, StatueBonus 40, statue 700/0): 20-match device validation = **1/20 organic** (m1 Defeat,
+145 s, `sP_min=-14` = a REAL organic statue kill, **0 probe spikes**) — the mechanism is proven, but **19/20 still
+Ongoing** (too timid, as the adversarial review warned). The AI broke through (it fielded **6 units vs the
+player's 4** — its 3-miner floor vs the player's 2); the player never did (`sA_min=1000`). First-combat 48 s
+(line combat preserved). **Diagnosis:** (a) breakthroughs too rare → push `StatueBonus` harder; (b) statue still
+slow to fall → soften more; (c) economic asymmetry → only the AI wins → symmetrize for BOTH outcomes.
+**Build-2 retune (all symmetric):**
+- `StatueBonus` **40 → 120** (commit to the base over enemies beyond ~2.4 u at mid-field → frequent breakthroughs;
+  match length still floored by the ~48 s march, so not a trivial race).
+- `statueMaxHealth` **700 → 500** (breakthroughs resolve faster, mobile window).
+- `SimPlayerHud` player auto-economy **2 → 3 miners** (symmetrize with the AI's `TargetMiners=3` floor → equal mine
+  occupancy/income → equal armies → BOTH Victory and Defeat possible). This is gameplay-input (the player's
+  auto-stand-in), not a render/presentation change.
+
 ## Build/validation budget
 One CI build; the 20-match campaign runs on that same APK. il2cpp segfault = transient flake → auto-retry the
 same commit (never a new build). Result + verdict → `05_…` then `GATE1_PASS_REPORT.md` / `GATE1_FAIL_REPORT.md`.

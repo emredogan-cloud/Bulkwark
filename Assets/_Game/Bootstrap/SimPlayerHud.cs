@@ -100,11 +100,13 @@ namespace Bulwark.Bootstrap
                     if (_worldReady0 < 0f) _worldReady0 = Time.unscaledTime;
                     float el = Time.unscaledTime - _worldReady0;
 
-                    // 1) ECONOMY: train 2 miners first → MiningSystem auto-assigns them to mines → gold income.
+                    // 1) ECONOMY: train 3 miners first → MiningSystem auto-assigns them to mines → gold income.
+                    //    GATE1-balance: 2→3 to SYMMETRIZE with the AI miner floor (BasicAI.TargetMiners=3) so the
+                    //    player's auto-economy matches the AI's → fair contest → BOTH Victory and Defeat possible.
                     if (!_autoMinersQueued && el > 3f)
                     {
                         int mi = MinerIndex();
-                        if (mi >= 0) { Training.EnqueueTrain(_em, PlayerTeam, mi); Training.EnqueueTrain(_em, PlayerTeam, mi); Debug.Log($"[HUD] AUTO-DEMO queued 2 miners (#{mi}) for economy."); }
+                        if (mi >= 0) { Training.EnqueueTrain(_em, PlayerTeam, mi); Training.EnqueueTrain(_em, PlayerTeam, mi); Training.EnqueueTrain(_em, PlayerTeam, mi); Debug.Log($"[HUD] AUTO-DEMO queued 3 miners (#{mi}) for economy."); }
                         else Debug.Log("[HUD] AUTO-DEMO: no miner role in roster.");
                         _autoMinersQueued = true;
                     }

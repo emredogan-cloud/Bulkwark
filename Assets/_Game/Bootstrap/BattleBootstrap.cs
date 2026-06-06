@@ -98,7 +98,7 @@ namespace Bulwark.Bootstrap
 
         [Header("Statue objective (§11 — HP/shield are tunable data, not canon)")]
         [Tooltip("Statue max health. PROVISIONAL/LSD-owned; tune via data, never assert as canon.")]
-        public float statueMaxHealth = 700f; // GATE1-balance (Option E): 1000→700 — a breakthrough force razes it in a mobile window (symmetric, both statues).
+        public float statueMaxHealth = 500f; // GATE1-balance (Option E): 1000→500 (build-2 retune from 700) — breakthroughs resolve in a mobile window (symmetric, both statues).
 
         [Tooltip("Statue shield pool absorbed before health (§11 shield phase). 0 = no shield.")]
         public float statueShieldHealth = 0f; // GATE1-balance (Option E): 250→0 — the shield was a pure delay buffer (symmetric, both statues).
