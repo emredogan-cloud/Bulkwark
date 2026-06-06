@@ -49,11 +49,14 @@ namespace Bulwark.Bootstrap
 
         private void Start()
         {
+            Instance = this; // WP-12 shell seam (presentation-only)
             _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); // built-in (no font import needed)
             if (_font == null) _font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             BuildCanvas();
             Time.timeScale = 0f;       // freeze the battle until the player presses Play
-            Show(Screen.Splash);
+            // WP-01: when the new UiRouter shell owns the entry (it shows the landscape SplashScreen), skip the
+            // legacy splash and start on the menu (revealed when the router splash fades out). Default = legacy.
+            Show(PresentationState.RouterOwnsEntry ? Screen.Menu : Screen.Splash);
             _built = true;
         }
 
@@ -149,9 +152,21 @@ namespace Bulwark.Bootstrap
             Show(Screen.Match); // hides all menu panels; sim unfreezes
         }
 
+        // ---- WP-12 shell seams (presentation/flow only; NO sim/balance/AI change — StartMatch/Show only
+        //      toggle Time.timeScale + which panel is active, exactly as the legacy flow already did) ----
+        /// <summary>Singleton handle so the UiRouter shell can drive match start/return. Set in Start.</summary>
+        public static UiFlow Instance { get; private set; }
+        /// <summary>The shell starts a match through the existing flow (hides legacy panels; unfreezes the sim).</summary>
+        public void BeginMatchFromShell(string mode) => StartMatch(mode);
+        /// <summary>The shell returns to the (legacy) menu state after a match; the shell's MainMenu covers it.</summary>
+        public void ReturnToMenuFromShell() => Show(Screen.Menu);
+
         private void ShowEnd(bool victory)
         {
             if (_screen == Screen.End) return;
+            // WP-12/13: when the UiRouter shell owns the front-end, delegate Victory/Defeat to the shell EndScreen
+            // (stop the Match watcher; do not build the legacy panel). The stinger fires from EndScreen.OnShow.
+            if (PresentationState.RouterOwnsEntry) { _screen = Screen.End; MatchPresentation.OnMatchDecided(victory); return; }
             _endTitle.text = victory ? "VICTORY" : "DEFEAT";
             _endTitle.color = victory ? new Color(1f, 0.85f, 0.2f) : AshRed;
             _endSummary.text = victory ? "The enemy statue has fallen." : "Your statue has fallen.";
@@ -170,9 +185,7 @@ namespace Bulwark.Bootstrap
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 100;
             var scaler = cgo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080, 2400);
-            scaler.matchWidthOrHeight = 0.5f;
+            UiScaling.Configure(scaler); // WP-00: landscape 2340x1080, match HEIGHT (was portrait 1080x2400, match 0.5)
             cgo.AddComponent<GraphicRaycaster>();
             if (EventSystem.current == null)
             {

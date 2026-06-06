@@ -20,5 +20,10 @@ namespace Bulwark.Bootstrap
         /// <summary>True only while the uGUI Match screen is active — gates the textured BattleHud (gold,
         /// statue-HP bars, troop-production buttons). Set by UiFlow. Default false.</summary>
         public static bool InMatch;
+
+        /// <summary>True when the new UiRouter shell owns the app entry (it shows the landscape WP-01 Splash).
+        /// UiFlow honors this by skipping its legacy splash and starting on its menu (revealed when the router
+        /// splash fades out). Presentation-only migration seam; default false (legacy flow unchanged).</summary>
+        public static bool RouterOwnsEntry;
     }
 }

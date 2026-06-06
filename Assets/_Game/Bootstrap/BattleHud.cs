@@ -158,9 +158,7 @@ namespace Bulwark.Bootstrap
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 50; // above the battlefield, below UiFlow's menu canvas (100)
             var scaler = cgo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080, 2400);
-            scaler.matchWidthOrHeight = 0.5f;
+            UiScaling.Configure(scaler); // WP-00: landscape 2340x1080, match HEIGHT (was portrait 1080x2400, match 0.5)
             cgo.AddComponent<GraphicRaycaster>();
             // Self-sufficient for clicks even if UiFlow is absent (a debug-only run): ensure an EventSystem.
             if (EventSystem.current == null)
