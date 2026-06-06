@@ -5,15 +5,13 @@
 // FormationMember is ever stamped on a unit) and MovementSystem has no "march when no target" fallback, so AI
 // units idle exactly like untargeted player units. This driver mirrors the player's ADVANCE (SimPlayerHud):
 // it periodically sets MoveDestination{playerStatue, Active=1} on Team-1 units so they march to contact and
-// the shared Targeting/Combat core produces real TWO-SIDED combat. It also fires a one-shot VICTORY-LATCH
-// PROBE late in the match (if still Ongoing) to deterministically validate the
-// StatueDamage→MatchState→freeze chain for the GATE-1 report.
+// the shared Targeting/Combat core produces real TWO-SIDED combat. RC-4: the old VICTORY-LATCH PROBE has been
+// REMOVED — matches now resolve ONLY from real statue destruction (no artificial force-finish).
 //
 // INVIOLABLE: this is the §12 CONTROL layer. It writes ONLY input data the existing ECS systems already
 // consume — MoveDestination overrides (the same component MovementSystem reads; identical to SimPlayerHud's
-// AdvanceAllPlayerUnits) and, for the probe, a StatueDamageInbox entry (the SAME buffer CombatSystem appends to
-// and StatueDamageSystem drains). It changes NO sim rule, NO balance number, NO unit/statue stat. Deleting this
-// one file removes it 100%. The probe is a clearly-labeled validation aid, not "balance".
+// AdvanceAllPlayerUnits). It changes NO sim rule, NO balance number, NO unit/statue stat. Deleting this
+// one file removes it 100%.
 // SCAFFOLD STATUS: authored here; CI compiles; device run produces the evidence.
 
 using Unity.Collections;
@@ -37,17 +35,14 @@ namespace Bulwark.Bootstrap
         }
 
         private const int PlayerTeam = 0, AiTeam = 1;
-        // VICTORY-LATCH PROBE: which statue to finish if the match is still Ongoing at ProbeAtSeconds.
-        // AiTeam ⇒ destroy the AI statue ⇒ expect Victory. Flip to PlayerTeam to validate Defeat (symmetric path).
-        private const int ProbeTargetTeam = AiTeam;
-        private const float ProbeAtSeconds = 120f;
+        // RC-4: the VICTORY-LATCH PROBE has been REMOVED. Matches now end ONLY by real statue destruction
+        // (CombatSystem → StatueDamageInbox → StatueDamageSystem → Health≤0 → MatchState). No artificial force-finish.
 
         private World _w;
         private EntityManager _em;
         private bool _ready;
         private float _t0 = -1f;
         private float _lastAdvance = -100f;
-        private bool _probeFired;
 
         private bool EnsureWorld()
         {
@@ -72,21 +67,7 @@ namespace Bulwark.Bootstrap
                     if (n > 0) Debug.Log($"[AIDRV] advance {n} AI units toward the player statue.");
                     _lastAdvance = Time.unscaledTime;
                 }
-
-                // Victory/defeat LATCH PROBE: if the match has not resolved from real combat by ProbeAtSeconds,
-                // deal a decisive blow to the target statue to validate StatueDamage→MatchState→freeze on device.
-                if (!_probeFired && el > ProbeAtSeconds)
-                {
-                    _probeFired = true;
-                    if (MatchIsOngoing())
-                    {
-                        bool ok = ForceFinishStatue(ProbeTargetTeam);
-                        Debug.Log(ok
-                            ? $"[AIDRV] VICTORY-LATCH PROBE: dealt decisive damage to Team {ProbeTargetTeam} statue (expect {(ProbeTargetTeam == AiTeam ? "Victory" : "Defeat")} + freeze)."
-                            : "[AIDRV] VICTORY-LATCH PROBE: target statue not found.");
-                    }
-                    else Debug.Log("[AIDRV] match already resolved by real combat before the probe — no probe needed.");
-                }
+                // RC-4: no victory-latch probe — the match resolves only from real statue destruction.
             }
             catch (System.Exception e) { Debug.LogError("[AIDRV] error: " + e.Message); }
         }
@@ -123,28 +104,5 @@ namespace Bulwark.Bootstrap
             return found;
         }
 
-        private bool MatchIsOngoing()
-        {
-            using var m = _em.CreateEntityQuery(ComponentType.ReadOnly<MatchState>()).ToComponentDataArray<MatchState>(Allocator.Temp);
-            return m.Length == 0 || m[0].Outcome == MatchOutcome.Ongoing;
-        }
-
-        /// <summary>Append a decisive StatueDamageInbox entry to the team's statue (the SAME path CombatSystem
-        /// uses). StatueDamageSystem then drains it → Health≤0 → Phase=Destroyed → MatchState Victory/Defeat → freeze.</summary>
-        private bool ForceFinishStatue(int team)
-        {
-            var sq = _em.CreateEntityQuery(ComponentType.ReadOnly<StatueTag>());
-            using var ents = sq.ToEntityArray(Allocator.Temp);
-            using var tags = sq.ToComponentDataArray<StatueTag>(Allocator.Temp);
-            for (int i = 0; i < ents.Length; i++)
-            {
-                if (tags[i].Team != team) continue;
-                if (!_em.HasBuffer<StatueDamageInbox>(ents[i])) return false;
-                var inbox = _em.GetBuffer<StatueDamageInbox>(ents[i]);
-                inbox.Add(new StatueDamageInbox { Amount = 100000f }); // ≫ 250 shield + 1000 health → guaranteed kill
-                return true;
-            }
-            return false;
-        }
     }
 }

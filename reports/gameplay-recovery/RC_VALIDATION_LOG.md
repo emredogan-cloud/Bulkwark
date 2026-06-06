@@ -24,7 +24,35 @@ files under `runtime/device_validation/`.
 - **Residual (expected → RC-2):** AI miners decay `3→0` by ~t78 (combat-targeting death + no replacement). This is
   the RC-2 defect, fixed next; RC-1's scope (economy *starts*) is complete.
 
-## RC-2 — Miner survival · code-validated, device pending (commit pending)
+## RC-2 — Miner survival · **PASS** (commit `9aa1dde`, CI GREEN)
+- **Device (2 matches, `runtime/device_validation/rc2/`):** miner attrition FIXED.
+  | Metric | Before (RC-1) | After RC-2 |
+  |---|---|---|
+  | AI miners held | 3 → **0 by t78** | **3, entire match** (min 2, max 3) |
+  | Player miners held | → 0 | **2, entire match** |
+  | AI army (max) | 4 | **7** (a real, scaling opponent) |
+  | AI gold | 89 then starved | **sustained** (spent down on the army) |
+- **Acceptance:** MET — neither side's miner count reaches 0 after the opening; no `MinerFloorSystem` needed (the
+  exclusion alone sustains both economies; mines don't deplete). Device install fought an MIUI USB-install
+  restriction (`INSTALL_FAILED_USER_RESTRICTED`) — device-side flake, succeeded on retry.
+
+## RC-3 — Combat acquisition + metric · **PASS** (commit `9e3e807`, CI GREEN)
+- **Change:** (a) `Combat.cs` MovementSystem override branch now HALTS an attack-move when `Targeting.Current` is
+  within the unit's existing `AttackState.Range` (CombatSystem then swings); (b) re-pointed the engaged metric in
+  `GateTelemetry`/`SimDebugOverlay` from the never-written `AttackState.Target` to `Targeting.Current` pointing at
+  an enemy UNIT. Logic-only, no balance.
+- **Review:** correctness/no-balance PASS; compile/ECS caught 1 CRITICAL (a prior failed edit left `_qEngaged`
+  defined as `UnitTag+AttackState` but consumed as `Targeting`) → FIXED.
+- **Device (3 matches, `runtime/device_validation/rc3/`):** real unit-vs-unit combat now occurs.
+  | Metric | Before | After RC-3 |
+  |---|---|---|
+  | Engaged (unit-vs-unit) | **0 / 390** | **>0 — 27 combat samples / 3 matches** (peak 4/side) |
+  | Statue HP at t=78 | chipped (units walked past) | **1000/1000** — units halt + fight each other first |
+- **Acceptance:** MET — `Engaged>0` when armies meet; a front line forms (statues no longer chipped early).
+- **Residual (→ RC-4/RC-5):** matches still end at ~t116 by the probe; statues now untouched at t=78 (units tied up
+  fighting). Removing the probe (RC-4) + organic march of survivors (RC-5) makes the *win* organic next.
+
+### RC-2 detail (original analysis)
 - **Change:** `Targeting.cs` — added `.WithNone<MinerTag>()` to BOTH unit passes (1a candidate-bucketing + pass-2
   acquire), so miners are neither combat TARGETS nor ACQUIRE targets. Logic-only, no balance, no new literal.
 - **Review:** 2-lens PASS, 0 blockers. One **HIGH** flagged (miner locomotion) — **investigated + resolved:**
