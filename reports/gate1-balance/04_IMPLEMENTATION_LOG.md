@@ -46,6 +46,24 @@ slow to fall → soften more; (c) economic asymmetry → only the AI wins → sy
   occupancy/income → equal armies → BOTH Victory and Defeat possible). This is gameplay-input (the player's
   auto-stand-in), not a render/presentation change.
 
+## Build-2 result → Build-3 pivot (Option A escalation)
+**Build-2** (`cabb94c`, StatueBonus 120, statue 500/0, symmetric 3-miner economy): 20-match device validation =
+**0/20 organic** (both statues untouched, `sP_min=sA_min=1000`; player 5.3 ≈ AI 5.3 units). **Worse than build-1's
+1/20** — and the cause is instructive: build-1's lone resolution came from the AI's *asymmetric* numbers edge
+(6 v 4); symmetrizing the economy produced a PERFECT balanced line that never opens. **Proven on device:
+targeting/access (Option B) alone CANNOT break a balanced, continuously-reinforced contact line** — every unit
+always has an enemy in attack range, so the `StatueBonus` lever never gets the clear lane it needs. The real
+blocker is the **reinforcement = attrition equilibrium** itself.
+
+**Build-3 = add Option A (sudden-death escalation)** — the documented contingency, now necessary. In
+`Combat.cs` CombatSystem: after `kEscalationStartSec=40 s`, ALL combat damage ramps `+8%/s` (cap `10×`),
+**symmetric for both teams** (`dmg *= matchEscalation`, applied after the §13 P1.4 chain, before the unit/statue
+branch). Casualties then outpace gold-limited reinforcement → the balanced line thins → units (high StatueBonus)
+break through → a statue falls; the marginally-stronger side (jitter/position) wins → BOTH outcomes; match length
+bounded (~110–140 s). Per-match clock via `SystemAPI.Time.ElapsedTime` (≈0 at match start — frozen during the
+`timeScale=0` menus; each validation match is a fresh app launch). Kept: StatueBonus 120, statue 500/0, symmetric
+economy. NOT a balance edge (no side favored). Independent + adversarial review before build.
+
 ## Build/validation budget
 One CI build; the 20-match campaign runs on that same APK. il2cpp segfault = transient flake → auto-retry the
 same commit (never a new build). Result + verdict → `05_…` then `GATE1_PASS_REPORT.md` / `GATE1_FAIL_REPORT.md`.

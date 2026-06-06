@@ -221,10 +221,29 @@ namespace Bulwark.Sim
         // Raged stays its own uncapped §5.3 layer. The one allowed literal (canon §6 cap, cited).
         private const float k_CommanderBudgetCeiling = 0.15f; // §6 commander power cap (ADR-2-002).
 
+        // GATE1-balance (Option A — SUDDEN-DEATH ESCALATION). Build-1/2 device validation proved that targeting
+        // (Option B) alone CANNOT break a balanced, continuously-reinforced contact line (0/20 organic at the
+        // symmetric 5v5 equilibrium): every unit always has an enemy in attack range, so no clear lane ever opens.
+        // Fix: after kEscalationStartSec, ALL combat damage ramps up linearly (capped), SYMMETRICALLY for both
+        // teams. Casualties then outpace gold-limited reinforcement → the line thins → units (high StatueBonus)
+        // pour through → a statue falls. The marginally-stronger side (jitter/position) wins → BOTH outcomes;
+        // bounded match length (first contact ~44s, resolution ~110-140s). NOT a balance edge (no side favored).
+        private const float kEscalationStartSec = 40f;  // overtime begins (after the economy/contact phase)
+        private const float kEscalationRate     = 0.08f; // +8% base damage per second after the start
+        private const float kEscalationCap      = 10f;   // hard ceiling on the multiplier (prevents runaway)
+
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             float dt = SystemAPI.Time.DeltaTime;
+            // ElapsedTime is the WORLD clock (frozen during the timeScale=0 menus, never rewinds). It is valid as
+            // a per-MATCH clock here ONLY because this build runs exactly ONE match per app-launch — the sim builds
+            // the world once and exposes no battle-reset (see MatchPresentation: "ONE battle per launch"), and the
+            // validation force-stops + relaunches between matches. FRAGILE: if an in-process rematch/battle-reset
+            // ever ships, match 2 would start near the escalation cap → switch this to a per-match start time
+            // (store match-start ElapsedTime in the MatchState singleton and use the delta). Build-3 is unaffected.
+            float matchEscalation = math.min(kEscalationCap,
+                1f + math.max(0f, (float)SystemAPI.Time.ElapsedTime - kEscalationStartSec) * kEscalationRate);
 
             // Resolve the counter-matrix singleton buffer once (cell 0 → 1.0). Empty/absent → all 1.0.
             bool hasMatrix = SystemAPI.TryGetSingletonEntity<CounterMatrixTag>(out var matrixEntity);
@@ -304,6 +323,11 @@ namespace Bulwark.Sim
                             * coverMult
                             * ragedMult;
                 if (dmg < 0f) dmg = 0f;
+
+                // GATE1-balance (Option A): symmetric sudden-death ramp — applied to BOTH unit and statue damage
+                // (computed before the target-type branch), identically for every team → fair. Breaks the
+                // reinforcement=attrition equilibrium so matches resolve organically.
+                dmg *= matchEscalation;
 
                 // ---- Apply ----
                 if (SystemAPI.HasComponent<StatueTag>(target))
