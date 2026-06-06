@@ -95,10 +95,11 @@ namespace Bulwark.Sim
             var buckets = new NativeParallelMultiHashMap<int, EnemyEntry>(
                 math.max(capacity, 1), Allocator.Temp);
 
-            // 1a) Units.
+            // 1a) Units. RC-2: exclude MinerTag — miners are economy units, never combat TARGETS.
             foreach (var (pos, team, row, e) in
                      SystemAPI.Query<RefRO<Position>, RefRO<Team>, RefRO<Row>>()
                               .WithAll<UnitTag, Health>()
+                              .WithNone<MinerTag>()
                               .WithEntityAccess())
             {
                 int t = team.ValueRO.Id;
@@ -138,9 +139,11 @@ namespace Bulwark.Sim
             }
 
             // 2) For each unit due for re-eval, scan only its target-row neighbourhood.
+            //    RC-2: exclude MinerTag — miners never ACQUIRE a combat target (stay on the mines, off the line).
             foreach (var (tgt, pos, team, row, e) in
                      SystemAPI.Query<RefRW<Targeting>, RefRO<Position>, RefRO<Team>, RefRO<Row>>()
                               .WithAll<UnitTag, Health>()
+                              .WithNone<MinerTag>()
                               .WithEntityAccess())
             {
                 // CONTROL boundary: PossessControl owns possessed / manually-ordered targets.
