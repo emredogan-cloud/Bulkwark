@@ -524,6 +524,16 @@ namespace Bulwark.Sim
             int queueCap = k_BaseEcoQueueCap + (eco > 1.15f ? 1 : 0);
             if (eco < 0.85f) queueCap = math.max(1, k_BaseEcoQueueCap - 1);
 
+            // RC-1 (logic-only): SquadAI is miner-blind and could spend the opening gold on a combat unit before
+            // BasicAI's miner-first opening runs (cooldown-bake race). Defer SquadAI's combat enqueue until this
+            // side's miner floor is met, making BasicAI the sole opening-economy authority. Reuses the shared
+            // BasicAISystem.TargetMiners floor + the existing FindRoleIndex/queue-walk — NO new balance constant.
+            int idxMiner = FindRoleIndex(catalog, RoleId.Miner);
+            int liveMiners = 0;
+            if (idxMiner >= 0)
+                foreach (var mt in SystemAPI.Query<RefRO<Team>>().WithAll<MinerTag>())
+                    if (mt.ValueRO.Id == team) liveMiners++;
+
             // Find this side's queue + current length and projected unpaid cost (data costs).
             foreach (var (q, qe) in
                      SystemAPI.Query<RefRO<TrainQueueTag>>().WithEntityAccess())
@@ -534,6 +544,16 @@ namespace Bulwark.Sim
                 var orders = state.EntityManager.GetBuffer<TrainOrder>(qe);
                 if (orders.Length >= queueCap)
                     return; // back-pressure: queue already at/over the eco cap → wait.
+
+                // RC-1: below the miner floor → defer combat (count in-flight miner orders too); BasicAI buys miners.
+                if (idxMiner >= 0)
+                {
+                    int inFlightMiners = 0;
+                    for (int oi = 0; oi < orders.Length; oi++)
+                        if (orders[oi].UnitIndex == idxMiner) inFlightMiners++;
+                    if (liveMiners + inFlightMiners < BasicAISystem.TargetMiners)
+                        return; // economy first: let BasicAI's miner-first opening run.
+                }
 
                 // Affordability (projected unpaid cost + this unit) against current Gold. We do
                 // NOT pre-spend; this only avoids queuing what the side plausibly cannot fund.

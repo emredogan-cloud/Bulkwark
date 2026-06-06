@@ -60,7 +60,7 @@ namespace Bulwark.Sim
         private const float ReevalPeriod = 1.0f;
         // Economy floor: keep a small, fixed miner count so the AI funds a fair fight
         // (miners first). Conservative — does not out-economy a reasonable player.
-        private const int   TargetMiners = 3;
+        internal const int  TargetMiners = 3;   // RC-1: shared miner floor (read by SquadAI's eco guard). No value change.
         // Back-pressure: never let the AI hoard a runaway queue (avoids "overwhelm").
         private const int   MaxQueueLength = 5;
         // Gold safety buffer: only enqueue a combat unit if the side can plausibly pay
