@@ -48,7 +48,7 @@ namespace Bulwark.Bootstrap
             public int AiStance;       // -1 none; else CommanderStance
             public int AiCount;
             public int QueueP, QueueAI;
-            public int Engaged;        // units with a live AttackState.Target
+            public int Engaged;        // units whose Targeting.Current is an enemy UNIT (real unit-vs-unit combat)
             public float TotalHealth;
             public int Systems;
             // radar points (capped)
@@ -108,7 +108,7 @@ namespace Bulwark.Bootstrap
                 _qStatue  = _em.CreateEntityQuery(ComponentType.ReadOnly<StatueTag>(), ComponentType.ReadOnly<StatueState>(), ComponentType.ReadOnly<Position>());
                 _qAi      = _em.CreateEntityQuery(ComponentType.ReadOnly<AICommander>());
                 _qQueue   = _em.CreateEntityQuery(ComponentType.ReadOnly<TrainQueueTag>());
-                _qEngaged = _em.CreateEntityQuery(ComponentType.ReadOnly<UnitTag>(), ComponentType.ReadOnly<AttackState>());
+                _qEngaged = _em.CreateEntityQuery(ComponentType.ReadOnly<UnitTag>(), ComponentType.ReadOnly<Targeting>());
                 _queriesReady = true;
             }
             return true;
@@ -188,9 +188,11 @@ namespace Bulwark.Bootstrap
                     if (qtags[i].Team == PlayerTeam) s.QueueP = len; else if (qtags[i].Team == AiTeam) s.QueueAI = len;
                 }
 
-            using (var atk = _qEngaged.ToComponentDataArray<AttackState>(Allocator.Temp))
-                for (int i = 0; i < atk.Length; i++)
-                    if (atk[i].Target != Entity.Null) s.Engaged++;
+            // RC-3 metric fix: read Targeting.Current (the real acquired-target field) and count only enemy-UNIT
+            // targets (not statues) → true unit-vs-unit engagement. AttackState.Target is never written.
+            using (var tg = _qEngaged.ToComponentDataArray<Targeting>(Allocator.Temp))
+                for (int i = 0; i < tg.Length; i++)
+                    if (tg[i].Current != Entity.Null && _em.HasComponent<UnitTag>(tg[i].Current)) s.Engaged++;
 
             s.PtCount = pc;
             return s;

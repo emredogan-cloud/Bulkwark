@@ -84,10 +84,15 @@ namespace Bulwark.Bootstrap
                 using (var t = mq.ToComponentDataArray<Team>(Allocator.Temp))
                     for (int i = 0; i < t.Length; i++) { if (t[i].Id == P0) mP++; else if (t[i].Id == P1) mA++; }
 
-                var aq = _em.CreateEntityQuery(ComponentType.ReadOnly<AttackState>(), ComponentType.ReadOnly<Team>());
-                using (var at = aq.ToComponentDataArray<AttackState>(Allocator.Temp))
+                // RC-3 metric fix: engagement is read from Targeting.Current (the field acquisition actually
+                // writes) — AttackState.Target is never populated. Count only units whose Current is an enemy
+                // UNIT (not a statue), so this measures real unit-vs-unit combat.
+                var aq = _em.CreateEntityQuery(ComponentType.ReadOnly<Targeting>(), ComponentType.ReadOnly<Team>());
+                using (var tg = aq.ToComponentDataArray<Targeting>(Allocator.Temp))
                 using (var t = aq.ToComponentDataArray<Team>(Allocator.Temp))
-                    for (int i = 0; i < at.Length; i++) if (at[i].Target != Entity.Null) { if (t[i].Id == P0) atkP++; else if (t[i].Id == P1) atkA++; }
+                    for (int i = 0; i < tg.Length; i++)
+                        if (tg[i].Current != Entity.Null && _em.HasComponent<UnitTag>(tg[i].Current))
+                        { if (t[i].Id == P0) atkP++; else if (t[i].Id == P1) atkA++; }
 
                 var sq = _em.CreateEntityQuery(ComponentType.ReadOnly<StatueTag>(), ComponentType.ReadOnly<StatueState>());
                 using (var tg = sq.ToComponentDataArray<StatueTag>(Allocator.Temp))

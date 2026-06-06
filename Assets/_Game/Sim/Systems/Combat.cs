@@ -101,16 +101,30 @@ namespace Bulwark.Sim
                 {
                     if (manualMove && !stunned)
                     {
-                        var dest = SystemAPI.GetComponent<MoveDestination>(e);
-                        StepToward(ref pos.ValueRW.Value, dest.Value, spd, dt,
-                                   stopDist: k_ManualArriveRadius);
-                        // ARRIVAL → clear the override (1.4 owns clearing per the handoff contract),
-                        // so the unit resumes auto-targeting next tick.
-                        if (math.distance(pos.ValueRO.Value, dest.Value) <= k_ManualArriveRadius)
+                        // RC-3: HALT the attack-move to FIGHT when a valid enemy is already within attack
+                        // range — otherwise an active MoveDestination (SimAiDriver/HUD advance, or a
+                        // formation slot) walks the unit PAST enemies to the statue without engaging.
+                        // Reuses the unit's existing AttackState.Range + Targeting.Current (no new constant);
+                        // CombatSystem resolves the swing, and the override is kept so the push resumes once
+                        // the enemy dies/leaves.
+                        Entity tcur = tgt.ValueRO.Current;
+                        bool enemyInRange = tcur != Entity.Null
+                            && SystemAPI.HasComponent<Position>(tcur)
+                            && math.distance(pos.ValueRO.Value, SystemAPI.GetComponent<Position>(tcur).Value) <= atk.ValueRO.Range;
+                        if (!enemyInRange)
                         {
-                            dest.Active = 0;
-                            SystemAPI.SetComponent(e, dest);
+                            var dest = SystemAPI.GetComponent<MoveDestination>(e);
+                            StepToward(ref pos.ValueRW.Value, dest.Value, spd, dt,
+                                       stopDist: k_ManualArriveRadius);
+                            // ARRIVAL → clear the override (1.4 owns clearing per the handoff contract),
+                            // so the unit resumes auto-targeting next tick.
+                            if (math.distance(pos.ValueRO.Value, dest.Value) <= k_ManualArriveRadius)
+                            {
+                                dest.Active = 0;
+                                SystemAPI.SetComponent(e, dest);
+                            }
                         }
+                        // else: enemy in range → hold station this tick; CombatSystem swings on Targeting.Current.
                     }
                     // Pure-possess (no active move override) leaves position to the control shell.
                     // A stunned manual-move unit holds station (no step) but keeps its override.
