@@ -64,6 +64,21 @@ bounded (~110–140 s). Per-match clock via `SystemAPI.Time.ElapsedTime` (≈0 a
 `timeScale=0` menus; each validation match is a fresh app launch). Kept: StatueBonus 120, statue 500/0, symmetric
 economy. NOT a balance edge (no side favored). Independent + adversarial review before build.
 
+## Build-3 result → Build-4 (the serialized-override bug)
+**Build-3** (escalation): device telemetry showed matches still Ongoing **but the statue read 1000 HP at match
+start, not the 500 I had set** — and m7's player statue was chipped to 813 (escalation WAS working; build-2 had
+left it untouched). Root cause: **`BattleBootstrap` is a SERIALIZED component in `Assets/MainScene.unity`** —
+`statueMaxHealth: 1000`, `statueShieldHealth: 250` (scene lines 329-330). Unity uses the **serialized scene
+values**, so my `BattleBootstrap.cs` code-default edits (Option E) were **inert in builds 1–3** (the statue was
+1250 effective the whole time). The code/const changes (StatueBonus in `Targeting.cs`, escalation in `Combat.cs`,
+3-miner logic in `SimPlayerHud.cs`) are NOT serialized → they DID apply. Build-3's escalation was therefore
+grinding a 1250-HP statue, too slow to finish in ~150 s.
+**Build-4 fix:** edit the SERIALIZED values in `Assets/MainScene.unity` → `statueMaxHealth: 500`,
+`statueShieldHealth: 0` (now consistent with the code defaults). All four levers (StatueBonus 120 + symmetric
+3-miner economy + sudden-death escalation + statue 500/0) finally active together. **Lesson:** for a MonoBehaviour
+placed in a scene, the serialized scene value overrides the C# field initializer — balance changes to such fields
+must edit the scene asset, not just the code default.
+
 ## Build/validation budget
 One CI build; the 20-match campaign runs on that same APK. il2cpp segfault = transient flake → auto-retry the
 same commit (never a new build). Result + verdict → `05_…` then `GATE1_PASS_REPORT.md` / `GATE1_FAIL_REPORT.md`.
