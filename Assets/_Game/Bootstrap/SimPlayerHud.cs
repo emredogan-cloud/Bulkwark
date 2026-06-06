@@ -63,6 +63,7 @@ namespace Bulwark.Bootstrap
         // coordinates. It issues the SAME control writes the buttons do (EnqueueTrain + MoveDestination) — no
         // rule/balance change. The manual buttons remain fully functional (player-driven training). Debug-only.
         private bool _autoDemo = true;
+        private const bool UseAutoAdvance = false; // RC-5: units self-advance organically (MovementSystem fallback)
         private float _worldReady0 = -1f;
         private bool _autoMinersQueued;
         private float _lastAutoTrain = -100f;
@@ -116,8 +117,10 @@ namespace Bulwark.Bootstrap
                         _lastAutoTrain = Time.unscaledTime;
                     }
 
-                    // 3) PUSH: advance all player units toward the enemy statue on a cadence (attack-move).
-                    if (el > 14f && (Time.unscaledTime - _lastAutoAdvance) > 5f)
+                    // 3) PUSH: RC-5 — player units now self-advance ORGANICALLY via the MovementSystem no-target
+                    // march-to-contact fallback, so the auto-demo push is disabled (auto-TRAIN above is kept so the
+                    // unattended campaign still produces an army; the player may still ADVANCE manually via the HUD).
+                    if (UseAutoAdvance && el > 14f && (Time.unscaledTime - _lastAutoAdvance) > 5f)
                     {
                         int n = AdvanceAllPlayerUnits();
                         if (n > 0) Debug.Log($"[HUD] AUTO-DEMO advance ({n} player units).");

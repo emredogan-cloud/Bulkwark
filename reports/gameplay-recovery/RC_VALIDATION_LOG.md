@@ -52,6 +52,25 @@ files under `runtime/device_validation/`.
 - **Residual (→ RC-4/RC-5):** matches still end at ~t116 by the probe; statues now untouched at t=78 (units tied up
   fighting). Removing the probe (RC-4) + organic march of survivors (RC-5) makes the *win* organic next.
 
+## RC-4 — Probe removal · code+review PASS (commit `ed6040d`)
+- **Change:** deleted the `SimAiDriver` victory-latch probe entirely; matches resolve ONLY via real statue
+  destruction (Combat→StatueDamageInbox→StatueDamageSystem→MatchState→MatchFlow, verified intact). Logic-only.
+- **Review:** PASS, 0 blockers; documented stalemate risk (no timeout fallback by design — watched in Phase E).
+- **Validation:** folded into the RC-5/6 final build + the 20-match revalidation (its isolated device build was
+  cancelled to stay within the 2-build budget; RC-4 code ships + is exercised in the final build).
+
+## RC-5 — Organic march + agency · RC-6 — Pacing · code+review PASS (final build)
+- **RC-5 change:** `Combat.cs` MovementSystem — when a unit has no acquired target it now ORGANICALLY marches
+  toward the ENEMY statue at its own MoveSpeed (StepToward, stopDist=AttackState.Range; miners excluded; statue
+  anchors pre-scanned). Both scaffold advances GATED (`SimAiDriver.UseScaffoldAdvance=false`,
+  `SimPlayerHud.UseAutoAdvance=false`); auto-TRAIN kept so the unattended campaign still builds armies; the player
+  may still ADVANCE manually via the HUD (agency). Logic-only, no new constant.
+- **RC-6:** subsumed — units advance from spawn (less dead time); further pacing (march speed / spawn / map) is
+  BALANCE → DEFERRED.
+- **Review:** 2-lens PASS, 0 blockers — Burst-safe (same multi-query pattern as Targeting/Mining), correct march
+  direction, no balance, no no-movement deadlock (statues always exist).
+- **Validation:** the 20-match Phase-E revalidation (`GATE1_REVALIDATION_REPORT.md`) runs on this build.
+
 ### RC-2 detail (original analysis)
 - **Change:** `Targeting.cs` — added `.WithNone<MinerTag>()` to BOTH unit passes (1a candidate-bucketing + pass-2
   acquire), so miners are neither combat TARGETS nor ACQUIRE targets. Logic-only, no balance, no new literal.

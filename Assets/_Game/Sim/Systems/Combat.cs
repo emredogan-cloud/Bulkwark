@@ -66,8 +66,16 @@ namespace Bulwark.Sim
         {
             float dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (pos, move, atk, tgt, e) in
-                     SystemAPI.Query<RefRW<Position>, RefRO<Movement>, RefRO<AttackState>, RefRO<Targeting>>()
+            // RC-5: enemy-front anchors (each side's statue position) for the organic no-target march-to-contact.
+            float2 statuePos0 = default, statuePos1 = default; bool have0 = false, have1 = false;
+            foreach (var (stag, spos) in SystemAPI.Query<RefRO<StatueTag>, RefRO<Position>>())
+            {
+                if (stag.ValueRO.Team == 0) { statuePos0 = spos.ValueRO.Value; have0 = true; }
+                else if (stag.ValueRO.Team == 1) { statuePos1 = spos.ValueRO.Value; have1 = true; }
+            }
+
+            foreach (var (pos, move, atk, tgt, team, e) in
+                     SystemAPI.Query<RefRW<Position>, RefRO<Movement>, RefRO<AttackState>, RefRO<Targeting>, RefRO<Team>>()
                               .WithAll<UnitTag>()
                               .WithEntityAccess())
             {
@@ -136,7 +144,21 @@ namespace Bulwark.Sim
                 // AUTO: close on the targeting-owned current target until inside attack range.
                 Entity target = tgt.ValueRO.Current;
                 if (target == Entity.Null || !SystemAPI.HasComponent<Position>(target))
+                {
+                    // RC-5: no acquired target → ORGANIC MARCH TO CONTACT toward the enemy statue at the unit's
+                    // own MoveSpeed (replaces the SimAiDriver/auto-demo advance scaffold). Stop within the unit's
+                    // existing AttackState.Range (no new constant) so it then acquires + attacks the statue/enemy.
+                    // Miners stay on the mines.
+                    if (!SystemAPI.HasComponent<MinerTag>(e))
+                    {
+                        int tid = team.ValueRO.Id;
+                        if (tid == 0 && have1)
+                            StepToward(ref pos.ValueRW.Value, statuePos1, spd, dt, stopDist: atk.ValueRO.Range);
+                        else if (tid == 1 && have0)
+                            StepToward(ref pos.ValueRW.Value, statuePos0, spd, dt, stopDist: atk.ValueRO.Range);
+                    }
                     continue;
+                }
 
                 float2 targetPos = SystemAPI.GetComponent<Position>(target).Value;
                 StepToward(ref pos.ValueRW.Value, targetPos, spd, dt,

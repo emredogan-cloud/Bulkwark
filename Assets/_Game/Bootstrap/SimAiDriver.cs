@@ -41,6 +41,7 @@ namespace Bulwark.Bootstrap
         private World _w;
         private EntityManager _em;
         private bool _ready;
+        private const bool UseScaffoldAdvance = false; // RC-5: units self-advance organically (MovementSystem fallback)
         private float _t0 = -1f;
         private float _lastAdvance = -100f;
 
@@ -60,8 +61,10 @@ namespace Bulwark.Bootstrap
                 if (_t0 < 0f) _t0 = Time.unscaledTime;
                 float el = Time.unscaledTime - _t0;
 
-                // Advance AI units toward the player statue (two-sided combat). Cadence mirrors the player push.
-                if (el > 8f && (Time.unscaledTime - _lastAdvance) > 5f)
+                // RC-5: AI units now self-advance ORGANICALLY via the MovementSystem no-target march-to-contact
+                // fallback, so this scaffold advance is disabled (kept, gated, for easy rollback). Movement is
+                // sim-driven, not MonoBehaviour-puppeted.
+                if (UseScaffoldAdvance && el > 8f && (Time.unscaledTime - _lastAdvance) > 5f)
                 {
                     int n = AdvanceTeamTowardEnemyStatue(AiTeam, PlayerTeam);
                     if (n > 0) Debug.Log($"[AIDRV] advance {n} AI units toward the player statue.");
