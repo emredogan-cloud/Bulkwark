@@ -180,7 +180,35 @@ A **PASS** requires ALL of:
   not balance-tuned).
 Anything short of all of (A)–(F) (G measured) = **FAIL** (no conditional wording).
 
+## 7b. Phase-B revision (folded from `GAMEPLAY_RECOVERY_REVIEW.md` — 4 reviewers, unanimous APPROVE_WITH_CHANGES)
+These code-verified corrections **supersede** the relevant text above and are binding on implementation:
+1. **RC-1 mechanism (corrected):** in-frame order is **BasicAI → AIScheduler → SquadAI**; the race is a
+   **cooldown-bake asymmetry** (`AICommander.ReevalCooldown=1.0` gates BasicAI ~1 s; `SquadAIState.ReevalCooldown=0`
+   lets SquadAI buy a ~95 g combat unit on frame 1). The fix is unchanged (gate SquadAI's combat enqueue behind the
+   miner floor). BasicAI is the **sole opening-miner authority**; a ~1 s "neither enqueues" window is expected —
+   **acceptance adds: miner #1 queued within ~1–2 s.**
+2. **`TargetMiners`** (`BasicAI.cs:63`) promoted `private`→**`internal`** (single shared source); **no new numeric literal.**
+3. **`MinerFloorSystem` = PLAYER side (team 0) ONLY**; BasicAI remains sole AI-side miner authority (no double-enqueue).
+4. **RC-5 (CRITICAL):** also add **`MoveDestination{Active=0}`** to every spawned non-miner combat unit in
+   `SpellSummon.SpawnFromCatalog` (same ECB) — `FormationSystem` writes the override only `if (hasDest)`, so
+   `FormationMember` alone is inert.
+5. **RC-5 both sides:** stamp `FormationMember` on **AI and player** combat units; build a **player `SquadFormation`**;
+   assign SquadId/Slot by **round-robin** at spawn (mirror `RowCursor`, `Training.cs:186-199`).
+6. **RC-3(b) halt location (corrected):** the **auto-target** branch already halts at range (`Combat.cs:128-129`);
+   the bug is the **`Active==1` override branch** (`Combat.cs:100-118`). Put the in-range halt **there** so it
+   covers SimAiDriver advance, HUD advance, AND RC-5 formation slots. Re-test RC-3 acceptance after RC-5 (scaffold off).
+7. **RC-5 auto-demo split (device-campaign critical):** keep **auto-TRAIN always on** (device + CI; the only
+   unattended player army source); gate **only auto-ADVANCE/push** to make push-timing organic/manual (agency).
+8. **RC-6 (honest reframe):** the structural distance-closer is the **per-unit `MoveSpeed` no-target
+   march-to-contact fallback** (no new constant); anchor-step / march-speed / spawn / map levers are **BALANCE →
+   DEFERRED**. RC-6 = structural fallback + documented defer (not "march shortens dead time").
+9. **Criterion (E) variance (reframed):** the sim is **deterministic (no RNG)** → identical inputs give identical
+   matches (correct). Variance + both-outcomes must come from **varied player decisions**, so the 20-match campaign
+   will **vary player strategy** (push timing / composition) to show different decisions → different outcomes
+   (jointly evidencing agency (F) + variety (E)). **Owner flag:** the PASS bar's "variety" is input-driven, not RNG.
+
 ## 8. Stop condition
-This plan is **design only**. Implementation begins **only after Phase B review approval**. The program stops
+This plan is **design only**. Implementation begins **only after Phase B review approval** (now obtained:
+unanimous APPROVE_WITH_CHANGES, changes folded in §7b). The program stops
 after `GATE1_REVALIDATION_REPORT.md` (PASS/FAIL). No GATE 2, no roadmap Phase 5, no future-research, no new
 features/content/assets/monetization, no balance tuning.
