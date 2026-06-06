@@ -51,7 +51,14 @@ namespace Bulwark.Sim
         // The enemy Statue is a FALLBACK objective: weighted well below any live enemy unit so units
         // engage units first and only converge on the base when no unit is in their neighbourhood
         // (§11 objective). It is a positional weight, not a combat/balance number (§15.6).
-        private const float StatueBonus = 0.01f;
+        // GATE1-balance (Option B): raised 0.01 → 40.0 (adversarial review: the residual risk is "too timid", so
+        // hedge UP within the endorsed 40-60 band; line combat stays dominant — a unit still fights a melee enemy
+        // until the statue is within ~6u). Score is weight/(1+distSq), so a NEAR enemy (tiny distSq)
+        // is ALWAYS preferred and units still fight the line; the higher weight only lets a unit COMMIT to the
+        // enemy base over a DISTANT enemy (gradient: at mid-field a unit still engages enemies within ~5 units;
+        // once it pushes past the sparse line the shrinking statue distance makes it commit harder → breakthrough).
+        // Symmetric (both sides) → fair. Converts the standing numbers/row-coverage edge into organic resolution.
+        private const float StatueBonus = 40.0f;
 
         // Bucket key: enemyTeam, row, xbin packed into one int for the hash map.
         private static int Key(int team, int row, int xbin, int xbins, int rows)
@@ -91,7 +98,7 @@ namespace Bulwark.Sim
             if (unitCount == 0 && statueCount == 0)
                 return;
 
-            int capacity = unitCount + statueCount * rows; // each statue is registered in every row
+            int capacity = unitCount + statueCount * rows * xbins; // GATE1-balance: statue registered in every (row,bin) cell
             var buckets = new NativeParallelMultiHashMap<int, EnemyEntry>(
                 math.max(capacity, 1), Allocator.Temp);
 
@@ -125,7 +132,6 @@ namespace Bulwark.Sim
                               .WithEntityAccess())
             {
                 int t = statueTag.ValueRO.Team;
-                int xb = im.XBinOf(pos.ValueRO.Value.x);
                 var entry = new EnemyEntry
                 {
                     Entity = e,
@@ -134,8 +140,15 @@ namespace Bulwark.Sim
                     Row = -1,        // spans all rows
                     IsStatue = 1
                 };
+                // GATE1-balance (Option B): register the statue in EVERY x-bin of every row (not just its own
+                // bin), so a frontline unit's neighbourhood search ALWAYS includes the enemy statue. The
+                // distance-weighted score (StatueBonus/(1+distSq)) keeps the FAR statue strictly below any NEAR
+                // enemy unit, so units still fight the line first and only commit to the base when their lane is
+                // clear — converting a local/numbers advantage into a real breakthrough. Entry.Pos stays the
+                // statue's true position, so marching/attack distance is correct regardless of which bin matched.
                 for (int r = 0; r < rows; r++)
-                    buckets.Add(Key(t, r, xb, xbins, rows), entry);
+                    for (int xbb = 0; xbb < xbins; xbb++)
+                        buckets.Add(Key(t, r, xbb, xbins, rows), entry);
             }
 
             // 2) For each unit due for re-eval, scan only its target-row neighbourhood.
