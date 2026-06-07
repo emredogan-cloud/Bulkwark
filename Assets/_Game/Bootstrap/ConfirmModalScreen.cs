@@ -310,7 +310,10 @@ namespace Bulwark.Bootstrap
         // ============================================================================================
         // BEHAVIOUR (events) — the modal NEVER mutates a balance; it only invokes the caller / routes / pops.
         // ============================================================================================
-        private void Confirm() { _onConfirm?.Invoke(); Dismiss(); }  // ① caller's server/stub-validated callback, then dismiss
+        // DEVICE-VALIDATION FIX (rc 0.0.88): pop THIS modal BEFORE invoking the callback. If OnConfirm navigates
+        // (e.g. Pause→Surrender does Router.Clear()+Show<EndScreen>), a Pop AFTER it would pop the freshly-pushed
+        // screen and strand the player on a bare battlefield. Snapshot → dismiss self → then invoke.
+        private void Confirm() { var cb = _onConfirm; Dismiss(); cb?.Invoke(); }  // ① dismiss self, then caller's callback
         private void BuyMore() { Router.Show<StoreScreen>(); }        // ③ route to Store (no auto-deduct); pop happens via the push covering us
         private void Dismiss() { Router.Pop(); }                      // CANCEL / CLOSE / OK / scrim → pop, no action
 
@@ -329,8 +332,7 @@ namespace Bulwark.Bootstrap
         {
             float t = 0f; const float d = 0.9f; // brief in-flight beat (unscaled)
             while (t < d) { t += Time.unscaledDeltaTime; yield return null; }
-            _onConfirm?.Invoke(); // let the caller resume; then close on "success"
-            Dismiss();
+            var cb = _onConfirm; Dismiss(); cb?.Invoke(); // dismiss self first, then resume (callback may navigate)
         }
 
         // ============================================================================================
