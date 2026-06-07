@@ -1,106 +1,119 @@
-// BULWARK — SPLASH SCREEN (UI Implementation · WP-01). Presentation-only, REMOVABLE.
+// BULWARK — SPLASH SCREEN (UI Construction Bible · 02). Presentation-only, REMOVABLE.
 //
-// The first landscape screen on the UiRouter shell (reports/ui-production/packages/WP-01... and the frozen
-// design/SplashScreenDesign.png). Composition (landscape, safe-area-correct):
-//   • full-bleed background key art (keyed "bg_splash", falls back to "bg_menu", then a solid dark color);
-//   • BULWARK wordmark + faction line inside an ornate frame region (the mockup frame is empty / logo-ready —
-//     final logo art is a PENDING asset, so a styled wordmark stands in; branding must become original BULWARK);
-//   • "TAP TO BEGIN" prompt; a full-screen tap-catcher dismisses on tap (with an 8 s safety auto-advance).
-// On dismiss it fades out THROUGH the UiRouter, revealing the Main Menu (today the legacy UiFlow menu; when
-// WP-04 builds a UiRouter MainMenuScreen this becomes Router.Replace<MainMenuScreen>()).
-//
-// AUDIO: plays menu music on show + a click on dismiss (AudioManager, null-safe).
-// BOUNDARY: NO gameplay interaction, NO ECS access, NO backend dependency — only PlaceholderAssets (sprites),
-// AudioManager (audio), UiRouter (navigation), and the PresentationState.RouterOwnsEntry seam (§12).
+// Screen #1 of the finalized NO-LOGIN boot chain: Splash → Loading → Main Menu (the splash advances DIRECTLY to
+// Loading; there is no login gate). Forensic build of design/SplashScreenDesign.png per the Bible's Sections A–O:
+// a full-bleed cinematic vista (cool-left Iron Pact / warm-right Ashen Horde temperature split, god-rays, embers,
+// vignette), a centred ornate cast-gold brand plaque (logo-ready field — BULWARK wordmark stands in for pending
+// logo art), and one low-centre "TAP TO BEGIN" CTA that floats over the art (no box/pill) and pulses to invite a
+// tap. Tap anywhere (or auto-advance) → Loading. Authored matte-painting + ornate frame art are pending (Section
+// N); code-built primitives (UiTex gradients/glows/frame) stand in. NO gameplay/ECS/backend (§12).
 
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Bulwark.Bootstrap
 {
-    /// <summary>WP-01 landscape splash on the UiRouter shell. Presentation-only.</summary>
+    /// <summary>Bible-02 landscape splash on the UiRouter shell. Presentation-only.</summary>
     public sealed class SplashScreen : UiScreen
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
         {
-            // The router shell owns the entry: suppress the legacy UiFlow splash and show the landscape one.
-            PresentationState.RouterOwnsEntry = true;
+            PresentationState.RouterOwnsEntry = true; // the router owns the entry; suppress the legacy UiFlow splash
             UiRouter.Instance.Show<SplashScreen>();
-            Debug.Log("[UI] SplashScreen (WP-01) booted via UiRouter.");
+            Debug.Log("[UI] SplashScreen (Bible-02) booted via UiRouter.");
         }
 
-        private const float SafetyTimeout = 8f; // auto-advance if the player never taps
-        private static readonly Color Dark = new Color(0.06f, 0.07f, 0.10f, 1f);
-        private static readonly Color Gold = new Color(1f, 0.85f, 0.30f);
-
-        private Font _font;
-        private Image _bg;
-        private Text _tapLabel;
-        private bool _bgApplied;
-        private bool _dismissing;
+        private const float SafetyTimeout = 6f; // auto-advance if the player never taps (Bible I: ≈3–5 s after idle)
+        private Image _bg, _ctaGlow;
+        private Text _cta;
+        private CanvasGroup _plaqueCg, _ctaCg;
+        private bool _bgApplied, _dismissing;
         private float _elapsed;
 
         protected override void Build()
         {
-            _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (_font == null) _font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-
-            // Full-bleed background (parented on the full-bleed screen root; extends under a side cutout).
-            _bg = StretchImage("Bg", Rect);
-            _bg.transform.SetAsFirstSibling(); // render behind SafeContent + tap-catcher
+            // ---- BG_Layer (full-bleed, ignores safe area) ----
+            _bg = UiWidgets.Stretch("KeyArt_Base", Rect, UiTheme.Obsidian);
+            _bg.gameObject.AddComponent<KenBurns>(); // slow Ken-Burns push-out 1.06 → 1.00
             ApplyBackground();
 
-            // --- content under the safe area ---
-            // Ornate frame placeholder behind the wordmark (uses the "panel" placeholder sprite if available).
-            var frameGo = new GameObject("Frame", typeof(RectTransform), typeof(Image));
-            var frt = (RectTransform)frameGo.transform;
-            frt.SetParent(SafeContent, false);
-            frt.anchorMin = frt.anchorMax = new Vector2(0.5f, 0.60f);
-            frt.sizeDelta = new Vector2(1300, 380);
-            frt.anchoredPosition = Vector2.zero;
-            var frameImg = frameGo.GetComponent<Image>();
-            frameImg.raycastTarget = false;
-            var panel = Spr("panel");
-            if (panel != null) { frameImg.sprite = panel; frameImg.type = Image.Type.Sliced; frameImg.color = new Color(1f, 1f, 1f, 0.85f); }
-            else frameImg.color = new Color(0f, 0f, 0f, 0.30f);
+            // Temperature split: cool steel-blue LEFT (Iron Pact) vs hot ember-orange RIGHT (Ashen) — never symmetric.
+            var coolRt = UiWidgets.Rect("Temp_CoolLeft", Rect, Vector2.zero, new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
+            coolRt.anchorMin = Vector2.zero; coolRt.anchorMax = new Vector2(0.55f, 1f); coolRt.offsetMin = Vector2.zero; coolRt.offsetMax = Vector2.zero;
+            var cool = coolRt.gameObject.AddComponent<Image>(); cool.raycastTarget = false;
+            cool.sprite = UiTex.HGradient(UiTheme.A(UiTheme.IronBanner, 0.5f), UiTheme.A(UiTheme.IronBanner, 0f), 64);
+            var warmRt = UiWidgets.Rect("Temp_WarmRight", Rect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            warmRt.anchorMin = new Vector2(0.45f, 0f); warmRt.anchorMax = Vector2.one; warmRt.offsetMin = Vector2.zero; warmRt.offsetMax = Vector2.zero;
+            var warm = warmRt.gameObject.AddComponent<Image>(); warm.raycastTarget = false;
+            warm.sprite = UiTex.HGradient(UiTheme.A(UiTheme.Ember2, 0f), UiTheme.A(UiTheme.Oxblood, 0.55f), 64);
 
-            // BULWARK wordmark (final logo art pending — styled text stands in; mockup frame is empty/logo-ready).
-            Label(SafeContent, "BULWARK", 140, new Vector2(0.5f, 0.60f), new Vector2(1200, 200), Color.white);
-            Label(SafeContent, "IRON PACT   ·   ASHEN HORDE", 40, new Vector2(0.5f, 0.485f), new Vector2(1200, 70), new Color(1f, 1f, 1f, 0.8f));
+            // Warm god-rays from the right horizon (additive-look glow), upper-right.
+            UiWidgets.Glow(Rect, UiTheme.A(UiTheme.Ember, 0.5f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-360, -260), new Vector2(1500, 1100), 1.4f);
+            // Sparse ember drift over the lower/right battlefield.
+            var emberHost = UiWidgets.Rect("Embers", Rect, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(300, 360), new Vector2(1700, 720));
+            emberHost.gameObject.AddComponent<EmberField>().count = 16;
+            // Vignette (≈55%) darkens the four corners.
+            UiWidgets.Vignette(Rect, 0.55f);
 
-            // TAP TO BEGIN prompt (bottom-center).
-            _tapLabel = Label(SafeContent, "TAP TO BEGIN", 48, new Vector2(0.5f, 0.12f), new Vector2(1000, 90), Gold);
+            // ---- BrandPlaque_Group (centred, fy≈0.245 from top → anchorY 0.755) ----
+            var plaqueGo = new GameObject("BrandPlaque_Group", typeof(RectTransform), typeof(CanvasGroup));
+            var plaqueRt = (RectTransform)plaqueGo.transform; plaqueRt.SetParent(SafeContent, false);
+            plaqueRt.anchorMin = plaqueRt.anchorMax = new Vector2(0.5f, 0.755f);
+            plaqueRt.sizeDelta = new Vector2(960, 432); plaqueRt.anchoredPosition = Vector2.zero;
+            _plaqueCg = plaqueGo.GetComponent<CanvasGroup>();
+            UiWidgets.Glow(plaqueRt, UiTheme.A(UiTheme.GoldHi, 0.18f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1180, 640)); // focal bloom
+            var field = UiWidgets.OrnateFrame(plaqueRt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(960, 432), UiTheme.FieldDark, true, 22f);
+            // Brand_Logo — placeholder wordmark (final logo art pending; styled per Section F).
+            UiWidgets.TitleLabel(field, "BULWARK", 150, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(740, 240), TextAnchor.MiddleCenter);
 
-            // Full-screen transparent tap-catcher (topmost child of the screen root) — tap anywhere to begin.
-            var tap = StretchImage("TapCatcher", Rect);
-            tap.color = new Color(0f, 0f, 0f, 0f);          // invisible but raycastable
-            var btn = tap.gameObject.AddComponent<Button>();
-            btn.transition = Selectable.Transition.None;
-            btn.targetGraphic = tap;
+            // ---- CTA_Group (bottom-centre, fy≈0.90 from top → anchorY 0.10) ----
+            var ctaGo = new GameObject("CTA_Group", typeof(RectTransform), typeof(CanvasGroup));
+            var ctaRt = (RectTransform)ctaGo.transform; ctaRt.SetParent(SafeContent, false);
+            ctaRt.anchorMin = ctaRt.anchorMax = new Vector2(0.5f, 0.10f);
+            ctaRt.sizeDelta = new Vector2(900, 80); ctaRt.anchoredPosition = Vector2.zero;
+            _ctaCg = ctaGo.GetComponent<CanvasGroup>();
+            _ctaGlow = UiWidgets.Glow(ctaRt, UiTheme.A(UiTheme.Gold, 0.22f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(640, 150)); // soft glow, not a pill
+            // Side flourishes.
+            var fl = UiWidgets.Finial(ctaRt, new Vector2(0.5f, 0.5f), new Vector2(-260, 0), 24f);
+            var fr = UiWidgets.Finial(ctaRt, new Vector2(0.5f, 0.5f), new Vector2(260, 0), 24f);
+            fl.color = UiTheme.Gold; fr.color = UiTheme.Gold;
+            _cta = UiWidgets.TitleLabel(ctaRt, "TAP TO BEGIN", 44, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560, 70), TextAnchor.MiddleCenter, UiTheme.ParchGold, UiTheme.Gold);
+            _cta.gameObject.AddComponent<PulseGraphic>().target = _cta; // idle "tap me" pulse (Section J)
+
+            // ---- TapCatcher (topmost, full-screen) ----
+            var tap = UiWidgets.Stretch("TapCatcher", SafeContent, new Color(0, 0, 0, 0));
+            var btn = tap.gameObject.AddComponent<Button>(); btn.transition = Selectable.Transition.None; btn.targetGraphic = tap;
             btn.onClick.AddListener(Dismiss);
         }
 
         public override void OnShow()
         {
-            AudioManager.Instance?.PlayMenuMusic(); // audio integration (menu/splash music)
+            AudioManager.Instance?.PlayMenuMusic();
+            if (_plaqueCg != null) { _plaqueCg.alpha = 0f; }
+            if (_ctaCg != null) { _ctaCg.alpha = 0f; }
+            StartCoroutine(Entrance());
+        }
+
+        // Section I entrance timeline (relative to OnShow), unscaled (menus run at timeScale 0).
+        private IEnumerator Entrance()
+        {
+            // t 0.40 → 1.10: plaque scales in 0.92 → 1.00 with focal bloom.
+            yield return Wait(0.40f);
+            float t = 0f; const float pd = 0.70f;
+            while (t < pd) { t += Time.unscaledDeltaTime; float k = EaseOutBack(Mathf.Clamp01(t / pd)); if (_plaqueCg != null) { _plaqueCg.alpha = Mathf.Clamp01(t / pd); _plaqueCg.transform.localScale = Vector3.one * Mathf.Lerp(0.92f, 1f, k); } yield return null; }
+            if (_plaqueCg != null) { _plaqueCg.alpha = 1f; _plaqueCg.transform.localScale = Vector3.one; }
+            // t 1.20 → 1.60: CTA fades in then begins idle pulse.
+            yield return Wait(0.10f);
+            t = 0f; const float cd = 0.40f;
+            while (t < cd) { t += Time.unscaledDeltaTime; if (_ctaCg != null) _ctaCg.alpha = Mathf.Clamp01(t / cd); yield return null; }
+            if (_ctaCg != null) _ctaCg.alpha = 1f;
         }
 
         private void Update()
         {
-            // Late-bound placeholder art loads async — swap the bg in once it is ready (one-shot).
-            if (!_bgApplied && PlaceholderAssets.Instance != null && PlaceholderAssets.Instance.Ready)
-                ApplyBackground();
-
-            // Gentle pulse on the prompt (no tween lib; unscaled — menus run at timeScale 0).
-            if (_tapLabel != null)
-            {
-                var c = _tapLabel.color;
-                c.a = 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 2f));
-                _tapLabel.color = c;
-            }
-
-            // Safety auto-advance if the player never taps.
+            if (!_bgApplied && PlaceholderAssets.Instance != null && PlaceholderAssets.Instance.Ready) ApplyBackground();
             _elapsed += Time.unscaledDeltaTime;
             if (_elapsed >= SafetyTimeout) Dismiss();
         }
@@ -110,48 +123,30 @@ namespace Bulwark.Bootstrap
             if (_dismissing) return;
             _dismissing = true;
             AudioManager.Instance?.Click();
-            // Boot flow (frozen): Splash → Login → Loading → Main Menu, all on the UiRouter shell.
-            Router.Replace<LoginScreen>();
+            StartCoroutine(ExitToLoading());
+        }
+
+        // Exit: CTA flash → screen fade → push Loading (NO login between — Bible boot flow).
+        private IEnumerator ExitToLoading()
+        {
+            if (_cta != null) { var g = _cta.GetComponent<PulseGraphic>(); if (g != null) g.enabled = false; _cta.color = new Color(1f, 0.96f, 0.86f); }
+            yield return Wait(0.08f);
+            float t = 0f; const float fd = 0.35f;
+            while (t < fd && Group != null) { t += Time.unscaledDeltaTime; Group.alpha = 1f - Mathf.Clamp01(t / fd); yield return null; }
+            Router.Replace<LoadingScreen>();
         }
 
         private void ApplyBackground()
         {
             if (_bg == null) return;
-            var s = Spr("bg_splash");
-            if (s == null) s = Spr("bg_menu");
+            var s = Spr("bg_splash") ?? Spr("bg_menu");
             if (s != null) { _bg.sprite = s; _bg.color = Color.white; _bg.preserveAspect = false; }
-            else _bg.color = Dark;
+            else _bg.color = UiTheme.Obsidian;
             if (PlaceholderAssets.Instance != null && PlaceholderAssets.Instance.Ready) _bgApplied = true;
         }
 
-        // ---- tiny code-built helpers (match UiFlow conventions) ----
-        private static Image StretchImage(string name, Transform parent)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-            var rt = (RectTransform)go.transform;
-            rt.SetParent(parent, false);
-            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
-            return go.GetComponent<Image>();
-        }
-
-        private Text Label(Transform parent, string text, int size, Vector2 anchor, Vector2 sz, Color col)
-        {
-            var go = new GameObject("Label_" + text, typeof(RectTransform), typeof(Text));
-            var rt = (RectTransform)go.transform;
-            rt.SetParent(parent, false);
-            rt.anchorMin = rt.anchorMax = anchor;
-            rt.sizeDelta = sz;
-            rt.anchoredPosition = Vector2.zero;
-            var t = go.GetComponent<Text>();
-            t.font = _font; t.text = text; t.fontSize = size; t.alignment = TextAnchor.MiddleCenter; t.color = col;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow;
-            t.raycastTarget = false; // the tap-catcher handles input
-            var sh = go.AddComponent<Shadow>(); sh.effectColor = new Color(0f, 0f, 0f, 0.8f); sh.effectDistance = new Vector2(2f, -2f);
-            return t;
-        }
-
-        private static Sprite Spr(string key) =>
-            PlaceholderAssets.Instance != null ? PlaceholderAssets.Instance.Get(key) : null;
+        private static IEnumerator Wait(float s) { float t = 0f; while (t < s) { t += Time.unscaledDeltaTime; yield return null; } }
+        private static float EaseOutBack(float x) { const float c1 = 1.70158f, c3 = c1 + 1f; return 1f + c3 * Mathf.Pow(x - 1f, 3f) + c1 * Mathf.Pow(x - 1f, 2f); }
+        private static Sprite Spr(string key) => PlaceholderAssets.Instance != null ? PlaceholderAssets.Instance.Get(key) : null;
     }
 }

@@ -35,7 +35,7 @@ namespace Bulwark.Bootstrap
             UiRouter.Instance.Clear();
             if (UiFlow.Instance != null) UiFlow.Instance.BeginMatchFromShell(_mode);
             else { Time.timeScale = 1f; PresentationState.InMatch = true; } // fallback if the legacy flow is absent
-            EnsurePauseOverlay();
+            // Pause is now owned by the Bible-08 BattleHud (top-left ❚❚) per spec — no separate overlay button.
         }
 
         /// <summary>Called by UiFlow (read-only MatchState watcher) when the match resolves.</summary>

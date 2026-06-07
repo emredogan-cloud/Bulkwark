@@ -1,66 +1,80 @@
-// BULWARK — MAIN MENU / HUB (UI Implementation · WP-04). Presentation-only, REMOVABLE.
+// BULWARK — MAIN MENU / HUB (UI Construction Bible · 05). Presentation-only, REMOVABLE.
 //
-// The landscape hub on the UiRouter shell (design/MainMenuDesign.png): currency chips (Gold + Gems — frozen
-// model D3, no Energy), BULWARK wordmark, center button stack (PLAY / CAMPAIGN / ONLINE BATTLE / CHESTS /
-// STORE), right rail (QUESTS / UNITS / CLAN / LEADERBOARD / SETTINGS) and a bottom feature bar (DAILY / SPIN /
-// FREE / EVENTS). Destinations BUILT in this execution sequence route to their screens; destinations NOT in
-// this sequence (or DEFERRED/ADR-gated per the freeze) surface a "coming soon" toast rather than dead buttons
-// (never invented). Currency values come from UiStub (display-only). NO ECS/gameplay/backend.
+// Root hub after Loading (no login). Forensic build of design/MainMenuDesign.png per Sections A–O: a bright
+// daylight kingdom backdrop; top-centre-right BULWARK logo (placeholder wordmark substituted per 00/01) + red
+// RISE ribbon; the function-coded primary button column center-right (PLAY gold/orange widest+topmost+glowing →
+// CAMPAIGN blue → ONLINE BATTLE green → CHESTS purple → STORE red); Gold+Gems currency pills top-right with the
+// green "+"; a five-icon right rail (Quests/Units/Clan/Leaderboard/Settings); and a bottom live-ops row
+// (Daily Reward/Lucky Spin/Free Rewards/Events). Currency values come from UiStub (display-only). Routes for
+// not-yet-built destinations surface a "coming soon" toast (wired to real screens in the finalization pass).
+// NO ECS/gameplay/backend (§12).
 
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Bulwark.Bootstrap
 {
-    /// <summary>WP-04 landscape hub. Presentation-only.</summary>
+    /// <summary>Bible-05 landscape hub. Presentation-only.</summary>
     public sealed class MainMenuScreen : UiScreen
     {
         private Text _goldText, _gemText;
 
         protected override void Build()
         {
-            UiWidgets.Stretch("Bg", Rect, UiWidgets.Dark, "bg_menu");
+            // ---- BG_Layer: bright daylight hub (never darken). Placeholder art lifted with a sky gradient. ----
+            UiWidgets.Stretch("KeyArt_Base", Rect, UiTheme.Charcoal, "bg_menu");
+            var sky = UiWidgets.Rect("Sky", Rect, new Vector2(0, 0.5f), new Vector2(1, 1), Vector2.zero, Vector2.zero);
+            sky.anchorMin = new Vector2(0, 0.45f); sky.anchorMax = Vector2.one; sky.offsetMin = Vector2.zero; sky.offsetMax = Vector2.zero;
+            var skyImg = sky.gameObject.AddComponent<Image>(); skyImg.raycastTarget = false;
+            skyImg.sprite = UiTex.VGradient(UiTheme.A(UiTheme.IronBlueHi, 0.45f), UiTheme.A(UiTheme.IronBlueHi, 0f), 64);
+            UiWidgets.Glow(Rect, UiTheme.A(UiTheme.GoldHi, 0.3f), new Vector2(0.2f, 1f), new Vector2(0.2f, 1f), new Vector2(0, -120), new Vector2(1300, 900), 1.5f); // upper-left god-rays
+            UiWidgets.Vignette(Rect, 0.32f); // gentle only
 
-            // Currency wallet (top-right): Gold rightmost (index 0), Gems left of it (index 1).
-            _goldText = UiWidgets.CurrencyChip(SafeContent, UiWidgets.Gold, UiStub.Gold, 0, out _);
-            _gemText = UiWidgets.CurrencyChip(SafeContent, UiWidgets.Gem, UiStub.Gems, 1, out _);
+            // ---- Currency pills (top-right): Gold rightmost (idx 0), Gems left of it (idx 1) ----
+            _goldText = UiWidgets.CurrencyChip(SafeContent, UiTheme.Gold, UiStub.Gold, 0, out _);
+            _gemText = UiWidgets.CurrencyChip(SafeContent, UiTheme.AmethystHi, UiStub.Gems, 1, out _);
 
-            // Wordmark.
-            UiWidgets.LabelAt(SafeContent, "BULWARK", 96, new Vector2(0.5f, 0.90f), new Vector2(1200, 150), TextAnchor.MiddleCenter, Color.white);
+            // ---- Logo (top-centre-right) + red RISE ribbon ----
+            UiWidgets.TitleLabel(SafeContent, "BULWARK", 104, new Vector2(0.61f, 0.87f), new Vector2(0.61f, 0.87f), Vector2.zero, new Vector2(1000, 150), TextAnchor.MiddleCenter);
+            var ribbon = UiWidgets.Card(SafeContent, new Vector2(0.61f, 0.785f), new Vector2(0.61f, 0.785f), Vector2.zero, new Vector2(360, 64), UiTheme.A(UiTheme.Oxblood, 0.95f));
+            UiWidgets.Label(ribbon, UiTheme.Track("RISE"), 38, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, TextAnchor.MiddleCenter, UiTheme.ParchGold);
 
-            // Center button stack.
-            UiWidgets.Button(SafeContent, "PLAY",          new Vector2(0.5f, 0.70f), new Vector2(0.5f, 0.70f), Vector2.zero, new Vector2(720, 120), UiWidgets.Gold,      () => Router.Show<ModeSelectScreen>(), 52);
-            UiWidgets.Button(SafeContent, "CAMPAIGN",      new Vector2(0.5f, 0.565f), new Vector2(0.5f, 0.565f), Vector2.zero, new Vector2(640, 104), UiWidgets.IronBlue,  () => Router.Show<ModeSelectScreen>(), 40);
-            UiWidgets.Button(SafeContent, "ONLINE BATTLE", new Vector2(0.5f, 0.445f), new Vector2(0.5f, 0.445f), Vector2.zero, new Vector2(640, 104), UiWidgets.IronBlue,  () => Router.Show<ModeSelectScreen>(), 40);
-            UiWidgets.Button(SafeContent, "CHESTS",        new Vector2(0.5f, 0.325f), new Vector2(0.5f, 0.325f), Vector2.zero, new Vector2(640, 104), UiWidgets.Purple,    () => Router.Toast("Chests — pending ADR (loot-box decision)"), 40);
-            UiWidgets.Button(SafeContent, "STORE",         new Vector2(0.5f, 0.205f), new Vector2(0.5f, 0.205f), Vector2.zero, new Vector2(640, 104), new Color(0.7f,0.2f,0.2f), () => Router.Show<StoreScreen>(), 40);
+            // ---- Primary button column (center-right, right edge fx≈0.84) ----
+            PrimaryButton("PLAY",          0.645f, 1324, UiTheme.Ember,    () => Router.Show<ModeSelectScreen>(), 52, true);
+            PrimaryButton("CAMPAIGN",      0.510f, 1180, UiTheme.IronBlue, () => Router.Show<CampaignMapScreen>());
+            PrimaryButton("ONLINE BATTLE", 0.410f, 1180, new Color(0.11f, 0.54f, 0.23f), () => Router.Show<OnlineBattleScreen>());
+            PrimaryButton("CHESTS",        0.310f, 1180, UiTheme.Amethyst, () => Router.Show<ChestsScreen>());
+            PrimaryButton("STORE",         0.210f, 1180, UiTheme.Oxblood,  () => Router.Show<StoreScreen>());
 
-            // Right rail.
-            RailButton("QUESTS",      0.82f, () => Router.Show<QuestsScreen>());
-            RailButton("UNITS",       0.66f, () => Router.Toast("Army / Units — coming soon"));
-            RailButton("CLAN",        0.50f, () => Router.Toast("Clan — deferred (post-MVP backend)"));
-            RailButton("LEADERBOARD", 0.34f, () => Router.Toast("Leaderboard — deferred (post-MVP backend)"));
-            RailButton("SETTINGS",    0.18f, () => Router.Show<SettingsScreen>());
+            // ---- Right rail (fx≈0.955) ----
+            RailTile("QUESTS",      0.78f, () => Router.Show<QuestsScreen>(), true, 3);
+            RailTile("UNITS",       0.67f, () => Router.Show<UnitsArmyScreen>());
+            RailTile("CLAN",        0.56f, () => Router.Show<ClanScreen>());
+            RailTile("LEADERBOARD", 0.45f, () => Router.Show<LeaderboardScreen>());
+            RailTile("SETTINGS",    0.34f, () => Router.Show<SettingsScreen>());
 
-            // Bottom feature bar.
-            FeatureButton("DAILY",  0.13f, () => Router.Toast("Daily Reward — coming soon"));
-            FeatureButton("SPIN",   0.29f, () => Router.Toast("Lucky Spin — pending ADR (gacha decision)"));
-            FeatureButton("FREE",   0.45f, () => Router.Toast("Free Rewards — coming soon"));
-            FeatureButton("EVENTS", 0.61f, () => Router.Toast("Events — coming soon"));
+            // ---- Bottom live-ops row (fy≈0.90 → anchorY 0.10) ----
+            LiveTile("DAILY REWARD", 0.05f, () => Router.Show<DailyRewardScreen>(), true, 1);
+            LiveTile("LUCKY SPIN",   0.16f, () => Router.Show<LuckySpinScreen>());
+            LiveTile("FREE REWARDS", 0.27f, () => Router.Show<FreeRewardsScreen>());
+            LiveTile("EVENTS",       0.38f, () => Router.Show<EventsHubScreen>());
         }
 
         public override void OnShow()
         {
-            // Refresh wallet (it may have changed in a child screen, e.g. Store).
             if (_goldText != null) _goldText.text = UiStub.Gold.ToString("N0");
             if (_gemText != null) _gemText.text = UiStub.Gems.ToString("N0");
             AudioManager.Instance?.PlayMenuMusic();
         }
 
-        private void RailButton(string caption, float y, UnityEngine.Events.UnityAction onClick)
-            => UiWidgets.IconButton(SafeContent, caption, new Vector2(1, y), new Vector2(1, y), new Vector2(-120, 0), new Vector2(120, 120), UiWidgets.Grey, onClick);
+        // Right-aligned to fx0.84 (pos.x = -width/2 so the right edge lands on the anchor).
+        private void PrimaryButton(string label, float anchorY, float width, Color body, UnityEngine.Events.UnityAction onClick, int fontSize = 44, bool glow = false)
+            => UiWidgets.GemButton(SafeContent, label, new Vector2(0.84f, anchorY), new Vector2(0.84f, anchorY), new Vector2(-width * 0.5f, 0), new Vector2(width, 84), body, onClick, fontSize, glow);
 
-        private void FeatureButton(string caption, float x, UnityEngine.Events.UnityAction onClick)
-            => UiWidgets.IconButton(SafeContent, caption, new Vector2(x, 0), new Vector2(x, 0), new Vector2(0, 110), new Vector2(150, 130), new Color(0.25f, 0.22f, 0.40f), onClick);
+        private void RailTile(string caption, float y, UnityEngine.Events.UnityAction onClick, bool badge = false, int count = 0)
+            => UiWidgets.IconTile(SafeContent, caption, new Vector2(0.955f, y), new Vector2(0.955f, y), Vector2.zero, 100f, UiWidgets.Grey, onClick, badge, count);
+
+        private void LiveTile(string caption, float x, UnityEngine.Events.UnityAction onClick, bool badge = false, int count = 0)
+            => UiWidgets.IconTile(SafeContent, caption, new Vector2(x, 0.10f), new Vector2(x, 0.10f), Vector2.zero, 110f, UiTheme.Amethyst, onClick, badge, count);
     }
 }
