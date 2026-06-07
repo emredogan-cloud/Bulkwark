@@ -127,7 +127,12 @@ namespace Bulwark.Bootstrap
         private void ActivatePanel(GameObject p, bool on)
         {
             if (p == null) return;
-            if (!on) { p.SetActive(false); return; }
+            // DEVICE-VALIDATION FIX (rc 0.0.88): when the UiRouter shell owns the front-end, the legacy UiFlow
+            // panels (Splash/Menu/ModeSelect/End) must NEVER be visible — the router draws every screen above.
+            // Leaving the legacy Menu active made it bleed through any router screen whose full-bleed background
+            // is not fully opaque (e.g. Campaign Map). Presentation-only (§12): only panel visibility changes;
+            // Show() still applies timeScale/audio/flags exactly as before, so the battle seam is untouched.
+            if (!on || PresentationState.RouterOwnsEntry) { p.SetActive(false); return; }
             p.SetActive(true);
             var cg = p.GetComponent<CanvasGroup>();
             if (cg != null) { cg.alpha = 0f; StartCoroutine(FadeIn(cg)); }
