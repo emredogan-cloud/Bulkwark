@@ -117,11 +117,13 @@ namespace Bulwark.Bootstrap
             var bg = rt.gameObject.AddComponent<Image>();
             var ps = Spr("panel"); if (ps != null) { bg.sprite = ps; bg.type = Image.Type.Sliced; }
             bg.color = new Color(0, 0, 0, 0.55f);
-            // icon
+            // icon — prefer the real coin/gem sliced from /design (gem when the chip colour is blue/purple-dominant)
             var iconRt = Rect("Icon", rt, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(46, 0), new Vector2(52, 52));
             valueIcon = iconRt.gameObject.AddComponent<Image>();
-            var gi = Spr("gold");
-            if (gi != null) { valueIcon.sprite = gi; valueIcon.color = iconColor; } else valueIcon.color = iconColor;
+            bool isGem = iconColor.b > iconColor.r;
+            var real = UiAssets.Instance != null ? UiAssets.Instance.Get(isGem ? "ic_gem" : "ic_coin") : null;
+            if (real != null) { valueIcon.sprite = real; valueIcon.color = Color.white; valueIcon.preserveAspect = true; }
+            else { var gi = Spr("gold"); if (gi != null) { valueIcon.sprite = gi; valueIcon.color = iconColor; } else valueIcon.color = iconColor; }
             // value
             var t = Label(rt, value.ToString("N0"), 40, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(90, 0), new Vector2(170, 64), TextAnchor.MiddleLeft, Color.white);
             // plus button
