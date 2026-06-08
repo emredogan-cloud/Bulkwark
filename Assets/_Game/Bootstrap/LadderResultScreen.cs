@@ -56,7 +56,7 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ============ FullBleedRoot: dark ranked-arena bg + heavy vignette + god-rays + scrim ============
-            UiWidgets.Stretch("BG_RankedArena", Rect, UiTheme.Obsidian, "bg_battle"); // dark castle/capital skyline (AspectFill stand-in)
+            UiWidgets.Backdrop(Rect, "ladderresult"); // dark castle/capital skyline (AspectFill stand-in)
             UiWidgets.Stretch("BG_NightGrade", Rect, UiTheme.A(Hex("#0a0d18"), 0.5f)); // dusk/night grade, push the arena back
             // Faint distant red opponent banners barely lit behind the scrim (§J).
             UiWidgets.Glow(Rect, UiTheme.A(UiTheme.Oxblood, 0.16f), new Vector2(0.16f, 0.42f), new Vector2(0.16f, 0.42f), Vector2.zero, new Vector2(360, 600), 1.7f);

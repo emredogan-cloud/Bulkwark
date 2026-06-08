@@ -153,6 +153,17 @@ namespace Bulwark.Bootstrap
         // High-fidelity builders (UI Construction Bible). Use UiTex/UiTheme/UiFx for the prestige look.
         // ============================================================================================
 
+        /// <summary>Full-bleed screen backdrop from the real /design art (UiAssets.Backdrop &lt;screenKey&gt;), with a
+        /// late-binder that swaps it in once the async asset load completes; obsidian fallback until then.</summary>
+        public static Image Backdrop(Transform fullBleed, string screenKey)
+        {
+            var img = Stretch("Backdrop_" + screenKey, fullBleed, UiTheme.Obsidian);
+            var bd = UiAssets.Instance != null ? UiAssets.Instance.Backdrop(screenKey) : null;
+            if (bd != null) { img.sprite = bd; img.color = Color.white; img.preserveAspect = false; }
+            img.gameObject.AddComponent<BackdropBinder>().Init(img, screenKey);
+            return img;
+        }
+
         /// <summary>A full-bleed radial vignette (transparent centre → near-black corners), non-raycast.
         /// Parent under the full-bleed BG layer; satisfies every spec's "MUST NOT omit the vignette".</summary>
         public static Image Vignette(Transform parent, float strength = 0.55f)
@@ -180,6 +191,14 @@ namespace Bulwark.Bootstrap
             Color? fieldColor = null, bool finials = true, float inset = 20f)
         {
             var group = Rect("OrnateFrame", parent, aMin, aMax, pos, size);
+
+            // Prefer the real ornate gold panel sliced from /design (9-slice); fall back to procedural.
+            var kitPanel = UiAssets.Instance != null ? UiAssets.Instance.Panel() : null;
+            if (kitPanel != null)
+            {
+                var gimg = group.gameObject.AddComponent<Image>(); gimg.sprite = kitPanel; gimg.type = Image.Type.Sliced; gimg.raycastTarget = false;
+                return Rect("Field", group, Vector2.zero, Vector2.one, Vector2.zero, new Vector2(-inset * 2f, -inset * 2f));
+            }
 
             // Obsidian field (subtle top-lit vertical gradient), inset inside the molding.
             var field = Rect("Field", group, Vector2.zero, Vector2.one, Vector2.zero, new Vector2(-inset * 2f, -inset * 2f));
@@ -285,30 +304,60 @@ namespace Bulwark.Bootstrap
                 var gl = Glow(rt, UiTheme.A(Lighten(body, 0.3f), 0.55f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, size * 1.5f);
                 var pg = gl.gameObject.AddComponent<PulseGraphic>(); pg.target = gl; pg.min = 0.35f; pg.max = 0.7f; pg.period = 1.8f;
             }
+            // Prefer the real gem-button sprite sliced from /design (gold rim + flourishes baked); the live label
+            // covers any baked text. Fall back to the procedural gradient body + rim + leading-icon when absent.
+            var kitBtn = UiAssets.Instance != null ? UiAssets.Instance.Button(KitButtonKey(body)) : null;
             var bodyImg = rt.gameObject.AddComponent<Image>();
-            bodyImg.sprite = UiTex.VGradient(Lighten(body, 0.28f), Darken(body, 0.34f), 32);
+            if (kitBtn != null) { bodyImg.sprite = kitBtn; bodyImg.type = Image.Type.Sliced; bodyImg.color = Color.white; }
+            else { bodyImg.sprite = UiTex.VGradient(Lighten(body, 0.28f), Darken(body, 0.34f), 32); }
             var btn = rt.gameObject.AddComponent<Button>(); btn.targetGraphic = bodyImg;
             var cb = btn.colors; cb.normalColor = Color.white; cb.highlightedColor = new Color(1.08f, 1.08f, 1.08f, 1f); cb.pressedColor = new Color(0.85f, 0.85f, 0.9f, 1f); cb.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.6f); cb.fadeDuration = 0.08f; btn.colors = cb;
             btn.onClick.AddListener(() => { AudioManager.Instance?.Click(); onClick?.Invoke(); });
 
-            // Cast-gold beveled rim (sits over the body edge).
-            var rim = Rect("Rim", rt, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            var rimImg = rim.gameObject.AddComponent<Image>(); rimImg.sprite = UiTex.Frame(UiTheme.GoldHi, UiTheme.Gold, UiTheme.GoldShadow, 48, 8); rimImg.type = Image.Type.Sliced; rimImg.raycastTarget = false;
-
             float pad = 28f;
-            if (leadingIcon)
+            if (kitBtn == null)
             {
-                float d = size.y * 0.62f;
-                var disc = Rect("IconDisc", rt, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(size.y * 0.62f, 0), new Vector2(d, d));
-                var dimg = disc.gameObject.AddComponent<Image>(); dimg.sprite = UiTex.Disc(UiTheme.A(UiTheme.Obsidian, 0.65f), 48); dimg.raycastTarget = false;
-                var gly = Rect("Glyph", disc, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(d * 0.6f, d * 0.6f));
-                var gimg = gly.gameObject.AddComponent<Image>(); gimg.sprite = UiTex.Diamond(UiTheme.GoldHi, 32); gimg.raycastTarget = false;
-                pad = size.y + 24f;
+                var rim = Rect("Rim", rt, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                var rimImg = rim.gameObject.AddComponent<Image>(); rimImg.sprite = UiTex.Frame(UiTheme.GoldHi, UiTheme.Gold, UiTheme.GoldShadow, 48, 8); rimImg.type = Image.Type.Sliced; rimImg.raycastTarget = false;
+                if (leadingIcon)
+                {
+                    float d = size.y * 0.62f;
+                    var disc = Rect("IconDisc", rt, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(size.y * 0.62f, 0), new Vector2(d, d));
+                    var dimg = disc.gameObject.AddComponent<Image>(); dimg.sprite = UiTex.Disc(UiTheme.A(UiTheme.Obsidian, 0.65f), 48); dimg.raycastTarget = false;
+                    var gly = Rect("Glyph", disc, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(d * 0.6f, d * 0.6f));
+                    var gimg = gly.gameObject.AddComponent<Image>(); gimg.sprite = UiTex.Diamond(UiTheme.GoldHi, 32); gimg.raycastTarget = false;
+                    pad = size.y + 24f;
+                }
             }
-            var lbl = Label(rt, label, fontSize, new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero, labelAlign, new Color(0.99f, 0.965f, 0.91f));
-            var lrt = (RectTransform)lbl.transform; lrt.offsetMin = new Vector2(pad, 0); lrt.offsetMax = new Vector2(-pad * 0.5f, 0);
+            // Real kit buttons carry symmetric flourishes → centre the label between them; procedural uses labelAlign.
+            var align = kitBtn != null ? TextAnchor.MiddleCenter : labelAlign;
+            var lbl = Label(rt, label, fontSize, new Vector2(0, 0), new Vector2(1, 1), Vector2.zero, Vector2.zero, align, new Color(0.99f, 0.965f, 0.91f));
+            var lrt = (RectTransform)lbl.transform;
+            if (kitBtn != null) { lrt.offsetMin = new Vector2(size.x * 0.22f, 0); lrt.offsetMax = new Vector2(-size.x * 0.22f, 0); }
+            else { lrt.offsetMin = new Vector2(pad, 0); lrt.offsetMax = new Vector2(-pad * 0.5f, 0); }
             lbl.gameObject.AddComponent<Outline>().effectColor = UiTheme.A(UiTheme.StrokeDark, 0.85f);
             return btn;
+        }
+
+        /// <summary>Map a body colour to the nearest extracted gem-button colour (blue/red/gold/green/purple/dark).</summary>
+        public static string KitButtonKey(Color c)
+        {
+            (string k, Color col)[] pal =
+            {
+                ("blue", UiTheme.IronBlue), ("blue", UiTheme.IronBlueHi),
+                ("red", UiTheme.Oxblood), ("red", UiTheme.Ember2),
+                ("gold", UiTheme.Gold), ("gold", UiTheme.Ember), ("gold", UiTheme.GoldHi),
+                ("purple", UiTheme.Amethyst), ("purple", UiTheme.AmethystHi),
+                ("green", new Color(0.11f, 0.54f, 0.23f)), ("green", new Color(0.27f, 0.60f, 0.27f)),
+                ("dark", new Color(0.20f, 0.22f, 0.27f)), ("dark", UiTheme.Charcoal), ("dark", Grey),
+            };
+            string best = "blue"; float bd = float.MaxValue;
+            foreach (var p in pal)
+            {
+                float d = (c.r - p.col.r) * (c.r - p.col.r) + (c.g - p.col.g) * (c.g - p.col.g) + (c.b - p.col.b) * (c.b - p.col.b);
+                if (d < bd) { bd = d; best = p.k; }
+            }
+            return best;
         }
 
         /// <summary>A small red notification badge (dot or count) anchored to a parent's top-right corner.</summary>

@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: f5ff1590b99c4beeb348f595c8c161b7
+TextureImporter:
+  externalObjects: {}
+  serializedVersion: 12
+  textureType: 0
+  textureShape: 1
+  spriteMode: 0
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  npotScale: 1
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+  isReadable: 0
+  platformSettings: []
+  userData:
+  assetBundleName:
+  assetBundleVariant:

@@ -76,7 +76,7 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ---- BG_FullBleed: dark battlefield dusk #0a0b0f → #1c1510, faint banner right, strong vignette. ----
-            UiWidgets.Stretch("BG_BattlefieldDusk", Rect, UiTheme.Obsidian, "bg_battle");
+            UiWidgets.Backdrop(Rect, "quests");
             var dusk = UiWidgets.Stretch("BG_DuskGrade", Rect, Color.white);
             dusk.raycastTarget = false; dusk.sprite = UiTex.VGradient(Hex("#1c1510"), Hex("#0a0b0f"), 64);
             // Faint faction banner on the right.

@@ -18,7 +18,7 @@ namespace Bulwark.Bootstrap
     {
         protected override void Build()
         {
-            UiWidgets.Stretch("KeyArt_Base", Rect, UiTheme.Obsidian, "bg_battle");
+            UiWidgets.Backdrop(Rect, "spellhud");
 
             // Targeting telegraph (battlefield space, transient — shown here in the aiming state from the mock).
             BuildTelegraph();

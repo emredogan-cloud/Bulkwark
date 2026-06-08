@@ -139,7 +139,7 @@ namespace Bulwark.Bootstrap
         private void BuildBackground()
         {
             // BG_FullBleed near-black base.
-            UiWidgets.Stretch("BG_FullBleed", Rect, BgBase);
+            UiWidgets.Backdrop(Rect, "commander");
 
             // BG_LeftCoolWash (left 50%, cobalt) — anchored left-stretch (Bible §23-D order 0).
             var cool = UiWidgets.Rect("BG_LeftCoolWash", Rect, Vector2.zero, new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);

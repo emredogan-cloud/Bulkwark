@@ -26,7 +26,7 @@ namespace Bulwark.Bootstrap
             // ---------------------------------------------------------------------------------------------
             // Bg_FullBleed (OUTSIDE safe area → bleeds under cutout) + radial vignette + treasury bloom.
             // ---------------------------------------------------------------------------------------------
-            UiWidgets.Stretch("Bg_FullBleed", Rect, UiTheme.Obsidian, "bg_menu");
+            UiWidgets.Backdrop(Rect, "store");
             UiWidgets.Stretch("Bg_Tint", Rect, UiTheme.A(Hex("#0c0e14"), 0.55f)); // obsidian vault wash (denser store mood)
             // warm focal god-ray behind the central Starter chest (upper-left bias) + amethyst product bloom.
             UiWidgets.Glow(Rect, UiTheme.A(Hex("#f4dca0"), 0.26f), new Vector2(0.30f, 0.78f), new Vector2(0.30f, 0.78f), Vector2.zero, new Vector2(1100, 760), 1.5f);

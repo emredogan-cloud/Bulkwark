@@ -80,7 +80,7 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ---- Bg_FullBleed: dim wizard-study (shelves/candles), bleeds under cutout (§C/§D). FX on Rect. ----
-            UiWidgets.Stretch("Bg_FullBleed", Rect, UiTheme.Charcoal, "bg_menu");
+            UiWidgets.Backdrop(Rect, "spells");
             UiWidgets.Stretch("StudyDim", Rect, UiTheme.A(Hex("#1a1424"), 0.55f)); // warm-violet candlelit wash
             UiWidgets.Glow(Rect, UiTheme.A(UiTheme.Ember, 0.16f), new Vector2(0.18f, 0.55f), new Vector2(0.18f, 0.55f), Vector2.zero, new Vector2(1500, 1100), 1.6f); // bookshelf candle ambience
             UiWidgets.Glow(Rect, UiTheme.A(CyanOrb, 0.10f), new Vector2(0.20f, 0.70f), new Vector2(0.20f, 0.70f), Vector2.zero, new Vector2(900, 900), 1.7f);          // mage-staff focal cool key

@@ -74,7 +74,7 @@ namespace Bulwark.Bootstrap
         {
             // ============================ FULL-BLEED BACKGROUND (Rect) ============================
             // BG_CampaignMap (dimmed battlefield) → heavy Vignette (→near-black #010101 corners) → dark scrim α0.45.
-            UiWidgets.Stretch("BG_CampaignMap", Rect, UiTheme.Charcoal, "bg_battle");
+            UiWidgets.Backdrop(Rect, "campaignresult");
             UiWidgets.Stretch("BG_MapDim", Rect, UiTheme.A(Hex("#010101"), 0.30f)); // push the map far back
             UiWidgets.Vignette(Rect, 0.72f); // heavy → near-black edges
             UiWidgets.Stretch("BG_DarkenScrim", Rect, new Color(0f, 0f, 0f, 0.45f));

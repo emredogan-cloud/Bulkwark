@@ -84,7 +84,7 @@ namespace Bulwark.Bootstrap
         {
             // ============================== BG (full-bleed dark stone hall) + FX → Rect ==============================
             // Background art + vignette/glow parent under the full-bleed Rect (may extend under a notch cutout).
-            var bg = UiWidgets.Stretch("BG_StoneHall", Rect, UiTheme.Obsidian, "bg_menu");
+            var bg = UiWidgets.Backdrop(Rect, "profile");
             bg.color = UiTheme.A(Color.white, 0.55f);                                   // dim the daylight key-art toward a stone hall
             var grade = UiWidgets.Stretch("BG_Grade", Rect, UiTheme.A(StoneBottom, 0.62f)); // obsidian→stone wash
             grade.sprite = UiTex.VGradient(UiTheme.A(StoneTop, 0.55f), UiTheme.A(StoneBottom, 0.85f), 64);

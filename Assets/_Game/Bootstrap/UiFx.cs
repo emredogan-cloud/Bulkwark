@@ -144,6 +144,22 @@ namespace Bulwark.Bootstrap
         }
     }
 
+    /// <summary>Swaps a backdrop Image to its real /design-extracted sprite once UiAssets finishes loading
+    /// (sprites load async ~1–2 s after boot; this lets even the first screens show the real art when ready).</summary>
+    public sealed class BackdropBinder : MonoBehaviour
+    {
+        private Image _img; private string _key; private bool _done;
+        public void Init(Image img, string key) { _img = img; _key = key; }
+        private void Update()
+        {
+            if (_done || _img == null) return;
+            var a = UiAssets.Instance; if (a == null || !a.Ready) return;
+            var bd = a.Backdrop(_key);
+            if (bd != null) { _img.sprite = bd; _img.color = Color.white; _img.preserveAspect = false; }
+            _done = true;
+        }
+    }
+
     /// <summary>Smoothly tweens an integer display toward a target (loading %, reward counters). Tabular-safe.</summary>
     public sealed class CountUp : MonoBehaviour
     {

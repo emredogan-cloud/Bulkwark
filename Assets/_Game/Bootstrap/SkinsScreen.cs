@@ -67,7 +67,7 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ---- BG (full-bleed dusk armory/battlefield) + FX → Rect (bleeds under cutout) ----
-            UiWidgets.Stretch("KeyArt_Base", Rect, UiTheme.Obsidian, "bg_battle");
+            UiWidgets.Backdrop(Rect, "skins");
             UiWidgets.Stretch("DuskWash", Rect, UiTheme.A(Hex("#241a22"), 0.5f)); // moodier grey-violet dusk wash
             UiWidgets.Glow(Rect, UiTheme.A(Hex("#ff7a2a"), 0.10f), new Vector2(0.62f, 0.55f), new Vector2(0.62f, 0.55f), Vector2.zero, new Vector2(1500, 900), 1.7f); // ember horizon
             // Torch flicker on the bg camp posts (left + right of the hero).

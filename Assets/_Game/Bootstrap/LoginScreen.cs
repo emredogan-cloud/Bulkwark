@@ -22,7 +22,7 @@ namespace Bulwark.Bootstrap
 
         protected override void Build()
         {
-            UiWidgets.Stretch("KeyArt_Base", Rect, UiTheme.Obsidian, "bg_menu");
+            UiWidgets.Backdrop(Rect, "login");
             UiWidgets.Vignette(Rect, 0.55f);
 
             // ---- Central ornate panel (fx0.25–0.75, fy0.04–0.89 → centred, 980×918) ----

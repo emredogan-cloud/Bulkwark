@@ -30,7 +30,7 @@ namespace Bulwark.Bootstrap
             _victory = PendingVictory;
 
             // ---- Full-bleed background ----
-            UiWidgets.Stretch("BG_Battlefield", Rect, UiTheme.Obsidian, _victory ? "bg_victory" : "bg_defeat");
+            UiWidgets.Backdrop(Rect, _victory ? "victory" : "defeat");
             if (!_victory) UiWidgets.Stretch("BG_Desaturate", Rect, UiTheme.A(new Color(0.23f, 0.25f, 0.28f), 0.5f)); // cold grey-blue grade
             if (_victory) UiWidgets.Glow(Rect, UiTheme.A(Hex("#f4dca0"), 0.3f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -60), new Vector2(1200, 900), 1.4f); // god-rays
             UiWidgets.Vignette(Rect, 0.6f);

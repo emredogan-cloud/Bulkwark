@@ -110,7 +110,7 @@ namespace Bulwark.Bootstrap
         private void BuildBackdrop()
         {
             // Warm stone base (matte — does NOT bloom).
-            var bg = UiWidgets.Stretch("FullBleedBackdrop", Rect, StoneTop, "bg_battle");
+            var bg = UiWidgets.Backdrop(Rect, "tournament");
             bg.gameObject.AddComponent<KenBurns>().duration = 14f; // slow throne-hall push
             var grade = UiWidgets.Rect("StoneGrade", Rect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             var gImg = grade.gameObject.AddComponent<Image>(); gImg.raycastTarget = false;

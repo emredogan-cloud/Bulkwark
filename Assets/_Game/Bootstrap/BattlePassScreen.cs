@@ -85,7 +85,7 @@ namespace Bulwark.Bootstrap
         // --- BG_FullBleed (Section G): dusk battlefield, violet-shifted, faint siege silhouettes + vignette. ---
         private void BuildBackground()
         {
-            var bg = UiWidgets.Stretch("BG_SiegeDusk", Rect, Color.white, "bg_menu");
+            var bg = UiWidgets.Backdrop(Rect, "battlepass");
             bg.color = Hex("#2a2030"); // violet-tint the placeholder key art
             // Violet→obsidian wash so the dusk palette reads even if the placeholder is missing.
             var washRt = UiWidgets.Rect("BG_Wash", Rect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);

@@ -71,7 +71,7 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ============================ FullBleedBackdrop: dark obsidian field + FX (→ Rect) ============================
-            UiWidgets.Stretch("FullBleedBackdrop", Rect, UiTheme.Obsidian, "bg_menu");
+            UiWidgets.Backdrop(Rect, "events");
             var grade = UiWidgets.Stretch("Backdrop_Grade", Rect, Color.white);
             grade.raycastTarget = false; grade.sprite = UiTex.VGradient(Hex("#14161e"), Hex("#0a0b0f"), 64); // #0a0b0f→#14161e matte
             // Warm top glow (#2a2416 additive) — faint.

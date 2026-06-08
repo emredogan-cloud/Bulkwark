@@ -39,7 +39,7 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ============================ BG_FullBleed: amethyst-lit treasure crypt ============================
-            UiWidgets.Stretch("Bg_FullBleed", Rect, Hex("#161019"), "bg_menu"); // crypt base (violet-shifted)
+            UiWidgets.Backdrop(Rect, "chests"); // crypt base (violet-shifted)
             // Violet ambient fog wash (top→bottom) over the art.
             var fog = UiWidgets.Stretch("Bg_VioletFog", Rect, Color.white);
             fog.sprite = UiTex.VGradient(UiTheme.A(Hex("#3a1f6a"), 0.42f), UiTheme.A(Hex("#0a0710"), 0.62f), 64); fog.raycastTarget = false;

@@ -20,7 +20,7 @@ namespace Bulwark.Bootstrap
 
         protected override void Build()
         {
-            UiWidgets.Stretch("KeyArt_Base", Rect, UiTheme.Obsidian, "bg_battle");
+            UiWidgets.Backdrop(Rect, "banner");
 
             // Full HUD chrome beneath (this mockup's spell-HUD-variant values).
             InMatchChrome.Build(Rect, SafeContent, () => Router.Pop(), 450, "3/8", "10,000 / 10,000", "8,300 / 10,000", "42/50", new[] { 60, 90, 75, 120, 150 });

@@ -154,7 +154,7 @@ namespace Bulwark.Bootstrap
         // ---- BackgroundLayer (full-bleed, under the cutout → Rect): dusk skyline + heavy vignette (§B/§D). ----
         private void BuildBackground()
         {
-            var sky = UiWidgets.Stretch("BG_Skyline", Rect, UiTheme.Obsidian, "bg_menu");
+            var sky = UiWidgets.Backdrop(Rect, "leaderboard");
             sky.raycastTarget = false;
             // Charcoal dusk grade over the key art (#14161e → #0a0b0f, §B).
             var grade = UiWidgets.Stretch("BG_DuskGrade", Rect, Color.white);

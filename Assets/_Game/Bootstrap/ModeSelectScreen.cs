@@ -21,7 +21,7 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ---- BG (soft-focus dusk) ----
-            UiWidgets.Stretch("KeyArt_Base", Rect, UiTheme.Obsidian, "bg_battle");
+            UiWidgets.Backdrop(Rect, "modeselect");
             UiWidgets.Stretch("Dusk", Rect, UiTheme.A(new Color(0.30f, 0.20f, 0.26f), 0.45f)); // warm grey-violet wash
             UiWidgets.Glow(Rect, UiTheme.A(UiTheme.Ember, 0.18f), new Vector2(0.5f, 0.7f), new Vector2(0.5f, 0.7f), Vector2.zero, new Vector2(1800, 900), 1.6f);
             UiWidgets.Vignette(Rect, 0.55f);

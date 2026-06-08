@@ -138,7 +138,7 @@ namespace Bulwark.Bootstrap
         private void BuildBackdrop()
         {
             // Obsidian field #0a0b0f→#14161e, matte (no central hero subject — calm utility screen, Section B).
-            UiWidgets.Stretch("FullBleedBackdrop", Rect, UiTheme.Obsidian, "bg_menu");
+            UiWidgets.Backdrop(Rect, "freerewards");
             var grade = UiWidgets.Stretch("BG_ObsidianGrade", Rect, Color.white);
             grade.raycastTarget = false; grade.sprite = UiTex.VGradient(BackdropTop, BackdropBot, 64);
             // Faint warm top glow (Section G: #2a2416 additive feel) — soft, upper-centre.

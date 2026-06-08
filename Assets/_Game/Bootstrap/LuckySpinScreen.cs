@@ -86,7 +86,7 @@ namespace Bulwark.Bootstrap
             // FULL-BLEED BACKDROP (Rect; OUTSIDE safe area → bleeds edge-to-edge under the cutout, Section D).
             // DimScrim → Vignette → GodRayCone → WheelFocalGlow, all non-interactive.
             // ============================================================================================
-            UiWidgets.Stretch("Bg_FullBleed", Rect, UiTheme.Obsidian, "bg_menu");          // dimmed hub backdrop
+            UiWidgets.Backdrop(Rect, "luckyspin");          // dimmed hub backdrop
             UiWidgets.Stretch("DimScrim", Rect, new Color(0f, 0f, 0f, 0.68f));             // black ~68% (Section C)
             UiWidgets.Vignette(Rect, 0.7f);                                                // heavy vignette (Section B)
             // GodRayCone — warm additive cone behind the wheel (slow), centered on the wheel focal (0.50 W, 0.52 H).

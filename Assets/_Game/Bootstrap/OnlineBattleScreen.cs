@@ -96,7 +96,7 @@ namespace Bulwark.Bootstrap
         // ===== §C FullBleedBackdrop: dark war-hall at dusk + heavy vignette + central blue/red clash glow. =====
         private void BuildBackdrop()
         {
-            UiWidgets.Stretch("FullBleedBackdrop", Rect, Hex("#0a0b0f"), "bg_battle"); // war-hall #0a0b0f→#16161e
+            UiWidgets.Backdrop(Rect, "onlinebattle"); // war-hall #0a0b0f→#16161e
             var grade = UiWidgets.Stretch("DuskGrade", Rect, Color.white);
             grade.sprite = UiTex.VGradient(UiTheme.A(Hex("#16161e"), 0.0f), UiTheme.A(Hex("#06070b"), 0.7f), 64); grade.raycastTarget = false;
 

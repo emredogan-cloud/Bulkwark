@@ -129,7 +129,7 @@ namespace Bulwark.Bootstrap
         // ---- BG_FullBleed: charcoal vertical gradient + corner vignette (§B/§G). Full-bleed → Rect. ----
         private void BuildBackground()
         {
-            var bg = UiWidgets.Stretch("BG_FullBleed", Rect, UiTheme.Obsidian);
+            var bg = UiWidgets.Backdrop(Rect, "units");
             bg.sprite = UiTex.VGradient(Hex("#0a0b0f"), Hex("#14161e"), 64); // top → bottom (§G)
             bg.raycastTarget = false;
             // Faint ruined-castle vista bleeding through under the right detail panel (§B).

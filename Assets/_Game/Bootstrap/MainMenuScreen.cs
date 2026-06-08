@@ -22,7 +22,7 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ---- BG_Layer: bright daylight hub (never darken). Placeholder art lifted with a sky gradient. ----
-            UiWidgets.Stretch("KeyArt_Base", Rect, UiTheme.Charcoal, "bg_menu");
+            UiWidgets.Backdrop(Rect, "mainmenu");
             var sky = UiWidgets.Rect("Sky", Rect, new Vector2(0, 0.5f), new Vector2(1, 1), Vector2.zero, Vector2.zero);
             sky.anchorMin = new Vector2(0, 0.45f); sky.anchorMax = Vector2.one; sky.offsetMin = Vector2.zero; sky.offsetMax = Vector2.zero;
             var skyImg = sky.gameObject.AddComponent<Image>(); skyImg.raycastTarget = false;
