@@ -76,6 +76,7 @@ namespace Bulwark.Bootstrap
         private Camera _cam;
         private bool _camConfigured;
         private float _logTimer;
+        internal static float CamShake; // presentation impact-shake magnitude (decays); applied to the ortho camera
         private SpriteRenderer _bg; // battlefield background (covers the ortho view, behind all proxies)
 
         private static readonly Color ColP = new Color(0.25f, 0.5f, 1f);
@@ -159,6 +160,7 @@ namespace Bulwark.Bootstrap
 
             CullStale();
             DecayFlashes(dt);
+            if (CamShake > 0f) CamShake = Mathf.Max(0f, CamShake - dt * 6f); // impact shake decays in ≤0.18s
             if (total > 0) ConfigureCamera(minX, maxX, minY, maxY);
 
             _logTimer += dt;
@@ -189,8 +191,8 @@ namespace Bulwark.Bootstrap
                     AudioManager.Instance?.Hit();
                     px.Anim?.NotifyHit(); // procedural recoil reaction (units only)
                     var fxPos = new Vector3(p.x, p.y, 0f);
-                    if (kind == Kind.Statue) VfxManager.Instance?.StatueDamage(fxPos);
-                    else VfxManager.Instance?.Impact(fxPos);
+                    if (kind == Kind.Statue) { VfxManager.Instance?.StatueDamage(fxPos); CamShake = Mathf.Min(0.18f, CamShake + 0.18f); }
+                    else { VfxManager.Instance?.Impact(fxPos); CamShake = Mathf.Min(0.18f, CamShake + 0.04f); }
                 }
             }
             px.LastHp = curHp;
@@ -315,7 +317,9 @@ namespace Bulwark.Bootstrap
 
             _cam.orthographic = true;
             _cam.orthographicSize = Mathf.Max(3f, size);
-            _cam.transform.position = new Vector3(cx, cy, -20f);
+            // Impact shake: small decaying random offset (≤~2% viewport, ≤0.18s) — readability-first per Phase-4 rules.
+            Vector3 shk = CamShake > 0f ? (Vector3)(UnityEngine.Random.insideUnitCircle * (CamShake * size * 0.10f)) : Vector3.zero;
+            _cam.transform.position = new Vector3(cx + shk.x, cy + shk.y, -20f);
             _cam.transform.rotation = Quaternion.identity; // look down +Z at the z=0 plane
             _cam.clearFlags = CameraClearFlags.SolidColor;
             _cam.backgroundColor = new Color(0.10f, 0.12f, 0.14f);

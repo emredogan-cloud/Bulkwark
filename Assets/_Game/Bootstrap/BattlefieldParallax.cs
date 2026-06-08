@@ -18,8 +18,11 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Entities;
 using UnityEngine;
 using UnityEngine.Networking;
+using Bulwark.Sim;
 
 namespace Bulwark.Bootstrap
 {
@@ -48,6 +51,9 @@ namespace Bulwark.Bootstrap
         private SpriteRenderer _tint;          // additive/dark biome grade quad
         private readonly List<Transform> _weather = new List<Transform>(64);
         private int _weatherIdx;
+        private World _w; private EntityManager _em; private EntityQuery _qStatue; private bool _statueReady;
+        private readonly Dictionary<Entity, SpriteRenderer> _auras = new Dictionary<Entity, SpriteRenderer>(4);
+        private readonly HashSet<Entity> _seenStatue = new HashSet<Entity>();
 
         private void Update()
         {
@@ -59,6 +65,7 @@ namespace Bulwark.Bootstrap
             DisableFlatBg();
             LayoutAndParallax();
             Weather();
+            Statues();
         }
 
         // ---------------- asset loading (own UnityWebRequest, like UiAssets) ----------------
@@ -172,6 +179,58 @@ namespace Bulwark.Bootstrap
                 var tr = _weather[i];
                 tr.position = new Vector3(cx + fx + drift, cy + viewH * 0.5f - fy, 0f);
                 tr.localScale = w == "rain" ? new Vector3(0.06f, 0.5f, 1f) : new Vector3(0.18f, 0.18f, 1f);
+            }
+        }
+
+        // ---------------- statue states (read ECS StatueState READ-ONLY → faction aura + idle/damaged/critical) ----------------
+        private void Statues()
+        {
+            var w = World.DefaultGameObjectInjectionWorld;
+            if (w == null || !w.IsCreated) return;
+            if (!_statueReady || w != _w)
+            {
+                _w = w; _em = w.EntityManager;
+                _qStatue = _em.CreateEntityQuery(ComponentType.ReadOnly<StatueTag>(), ComponentType.ReadOnly<StatueState>(), ComponentType.ReadOnly<Position>());
+                _statueReady = true;
+            }
+            _seenStatue.Clear();
+            try
+            {
+                using (var ents = _qStatue.ToEntityArray(Allocator.Temp))
+                using (var stt = _qStatue.ToComponentDataArray<StatueState>(Allocator.Temp))
+                using (var pos = _qStatue.ToComponentDataArray<Position>(Allocator.Temp))
+                {
+                    float minx = float.MaxValue, maxx = float.MinValue;
+                    for (int i = 0; i < pos.Length; i++) { if (pos[i].Value.x < minx) minx = pos[i].Value.x; if (pos[i].Value.x > maxx) maxx = pos[i].Value.x; }
+                    for (int i = 0; i < ents.Length; i++)
+                    {
+                        _seenStatue.Add(ents[i]);
+                        float frac = stt[i].MaxHealth > 0f ? Mathf.Clamp01(stt[i].Health / stt[i].MaxHealth) : 1f;
+                        bool blue = Mathf.Abs(pos[i].Value.x - minx) <= Mathf.Abs(pos[i].Value.x - maxx);
+                        if (!_auras.TryGetValue(ents[i], out var sr) || sr == null)
+                        {
+                            var go = new GameObject("StatueAura"); go.transform.SetParent(_root, false);
+                            sr = go.AddComponent<SpriteRenderer>(); sr.sprite = UiTex.Disc(Color.white, 64); sr.sortingOrder = -1; // just behind the statue proxy (0)
+                            _auras[ents[i]] = sr;
+                        }
+                        // idle (≥0.6) steady faction glow; damaged (<0.6) dimmer/faster; critical (<0.3) red, fast pulse.
+                        Color baseC = blue ? new Color(0.4f, 0.7f, 1f) : new Color(1f, 0.5f, 0.35f);
+                        if (frac < 0.3f) baseC = Color.Lerp(baseC, new Color(1f, 0.25f, 0.15f), 0.8f);
+                        float pulseHz = frac < 0.3f ? 5f : frac < 0.6f ? 2.2f : 1.1f;
+                        float a = (0.18f + 0.5f * frac) * (0.7f + 0.3f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * pulseHz)));
+                        sr.color = new Color(baseC.r, baseC.g, baseC.b, a);
+                        float s = 3.0f + 1.3f * frac; // shrinks as it loses health
+                        sr.transform.localScale = new Vector3(s, s, 1f);
+                        sr.transform.position = new Vector3(pos[i].Value.x, pos[i].Value.y + 0.6f, 0f);
+                    }
+                }
+            }
+            catch (System.Exception) { /* presentation read; ignore transient ECS access */ }
+            if (_auras.Count > 0) // destruction → cull the aura
+            {
+                List<Entity> dead = null;
+                foreach (var kv in _auras) if (!_seenStatue.Contains(kv.Key)) (dead ??= new List<Entity>()).Add(kv.Key);
+                if (dead != null) foreach (var e in dead) { if (_auras.TryGetValue(e, out var s) && s != null) Destroy(s.gameObject); _auras.Remove(e); }
             }
         }
 
