@@ -35,9 +35,10 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ---- BG_Layer (full-bleed, ignores safe area) ----
-            _bg = UiWidgets.Stretch("KeyArt_Base", Rect, UiTheme.Obsidian);
+            _bg = UiLayers.Plate(Rect, "splash", 0.22f); // LAYER 0 clean plate
             _bg.gameObject.AddComponent<KenBurns>(); // slow Ken-Burns push-out 1.06 → 1.00
             ApplyBackground();
+            UiLayers.Character(SafeContent, "king", new Vector2(0.17f, 0.42f), Vector2.zero, 640f); // LAYER 1 hero
 
             // Temperature split: cool steel-blue LEFT (Iron Pact) vs hot ember-orange RIGHT (Ashen) — never symmetric.
             var coolRt = UiWidgets.Rect("Temp_CoolLeft", Rect, Vector2.zero, new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
@@ -139,10 +140,8 @@ namespace Bulwark.Bootstrap
         private void ApplyBackground()
         {
             if (_bg == null) return;
-            var s = Spr("bg_splash") ?? Spr("bg_menu");
-            if (s != null) { _bg.sprite = s; _bg.color = Color.white; _bg.preserveAspect = false; }
-            else _bg.color = UiTheme.Obsidian;
-            if (PlaceholderAssets.Instance != null && PlaceholderAssets.Instance.Ready) _bgApplied = true;
+            // LAYER-0 plate is the background now; do NOT override it (that caused the doubling). Mark applied so boot advances.
+            _bgApplied = true;
         }
 
         private static IEnumerator Wait(float s) { float t = 0f; while (t < s) { t += Time.unscaledDeltaTime; yield return null; } }

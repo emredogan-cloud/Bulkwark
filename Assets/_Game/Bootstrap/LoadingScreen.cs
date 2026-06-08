@@ -16,7 +16,7 @@ namespace Bulwark.Bootstrap
     /// <summary>Bible-03 landscape loading screen. Presentation-only.</summary>
     public sealed class LoadingScreen : UiScreen
     {
-        private const float Duration = 1.9f; // presentation stub fill time (no real load gate under GATE-1 recovery)
+        private const float Duration = 1.6f; // presentation stub fill time (Phase-3 spec: 1.6 s)
         private Image _bg;
         private UiWidgets.BarParts _bar;
         private CountUp _count;
@@ -26,9 +26,12 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ---- BG_Layer (full-bleed) ----
-            _bg = UiWidgets.Stretch("KeyArt_Base", Rect, UiTheme.Obsidian);
+            _bg = UiLayers.Plate(Rect, "loading", 0.20f); // LAYER 0 clean plate
             _bg.gameObject.AddComponent<KenBurns>().from = 1.05f;
             ApplyBackground();
+            // LAYER 1: two stick armies converging on the centre citadel
+            UiLayers.Army(SafeContent, "blue", new Vector2(0f, 0f), new Vector2(0.52f, 0f), 90f, 230f);
+            UiLayers.Army(SafeContent, "red", new Vector2(0.48f, 0f), new Vector2(1f, 0f), 90f, 230f);
 
             // Left-blue / right-red flank framing (symmetric about the centre citadel).
             var lRt = UiWidgets.Rect("Flank_Left", Rect, Vector2.zero, new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
@@ -87,10 +90,8 @@ namespace Bulwark.Bootstrap
         private void ApplyBackground()
         {
             if (_bg == null) return;
-            var s = Spr("bg_battle") ?? Spr("bg_menu");
-            if (s != null) { _bg.sprite = s; _bg.color = Color.white; _bg.preserveAspect = false; }
-            else _bg.color = UiTheme.Obsidian;
-            if (PlaceholderAssets.Instance != null && PlaceholderAssets.Instance.Ready) _bgApplied = true;
+            // LAYER-0 plate is the background now; do NOT override it. Mark applied so the loading flow proceeds.
+            _bgApplied = true;
         }
 
         private static IEnumerator Wait(float s) { float t = 0f; while (t < s) { t += Time.unscaledDeltaTime; yield return null; } }

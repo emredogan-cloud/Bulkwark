@@ -123,9 +123,8 @@ namespace Bulwark.Bootstrap
         //      Terrain reads left→right: swamp/forest (teal-green) → ruined castle (stone) → volcanic lava (ember). ----
         private void BuildMapBody()
         {
-            // Base painting stand-in: horizontal terrain gradient swamp → stone → lava (placeholder for the hero art).
-            var baseImg = UiWidgets.Stretch("Map_Art", Rect, StoneGrey, "bg_battle");
-            baseImg.color = new Color(1f, 1f, 1f, 0.55f); // let the terrain washes read over the placeholder
+            // LAYER 0: clean UI-free plate (green→amber world); the terrain washes below read on top of it.
+            UiLayers.Plate(Rect, "campaignmap", 0f);
             // Left swamp wash (teal-green, fades toward centre).
             var swamp = UiWidgets.Rect("Terrain_Swamp", Rect, new Vector2(0, 0), new Vector2(0.42f, 1), Vector2.zero, Vector2.zero);
             var swampImg = swamp.gameObject.AddComponent<Image>(); swampImg.raycastTarget = false;

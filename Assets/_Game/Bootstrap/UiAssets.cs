@@ -39,6 +39,16 @@ namespace Bulwark.Bootstrap
         };
         // plain sprites (PNG): finial + icons.
         private static readonly string[] Plain = { "kit_finial", "ic_coin", "ic_gem" };
+        // LAYER 0 — clean UI-free background plates (JPG). No baked text/UI (Phase-3 architecture).
+        private static readonly string[] Plates =
+        { "splash", "loading", "mainmenu", "modeselect", "campaignmap", "battlehud", "victory", "defeat" };
+        // LAYER 1 — stick-figure characters + army strips (PNG, transparent).
+        private static readonly string[] CharPngs =
+        {
+            "char_king", "char_mage", "char_archer", "char_sword_blue", "char_sword_red",
+            "char_spear_blue", "char_spear_red", "char_brute_red", "char_kneel", "char_cheer",
+            "army_blue", "army_red",
+        };
 
         private readonly Dictionary<string, Sprite> _sprites = new Dictionary<string, Sprite>(64);
 
@@ -59,9 +69,11 @@ namespace Bulwark.Bootstrap
             string baseDir = Application.streamingAssetsPath + "/bulwark_ui/";
             int total = 0;
             var ok = new int[1];
-            foreach (var k in Backdrops) { total++; yield return Step(baseDir, "bd_" + k, ".jpg", Vector4.zero, ok); }
+            foreach (var k in Plates)   { total++; yield return Step(baseDir, "plate_" + k, ".jpg", Vector4.zero, ok); }
+            foreach (var k in CharPngs) { total++; yield return Step(baseDir, k, ".png", Vector4.zero, ok); }
             foreach (var s in Sliced)   { total++; yield return Step(baseDir, s.key, ".png", new Vector4(s.lr, s.tb, s.lr, s.tb), ok); }
             foreach (var k in Plain)    { total++; yield return Step(baseDir, k, ".png", Vector4.zero, ok); }
+            foreach (var k in Backdrops) { total++; yield return Step(baseDir, "bd_" + k, ".jpg", Vector4.zero, ok); }
             Ready = true;
             Debug.Log($"[UIART] UI sprites ready: {ok[0]}/{total} loaded.");
         }
@@ -102,5 +114,11 @@ namespace Bulwark.Bootstrap
         public Sprite Button(string color) => Get("kit_btn_" + color);
         /// <summary>The gem finial ornament.</summary>
         public Sprite Finial() => Get("kit_finial");
+        /// <summary>LAYER 0 — clean UI-free background plate (plate_&lt;screenKey&gt;), or null.</summary>
+        public Sprite Plate(string screenKey) => Get("plate_" + screenKey);
+        /// <summary>LAYER 1 — stick-figure character (char_&lt;archetype&gt;), or null.</summary>
+        public Sprite Character(string archetype) => Get("char_" + archetype);
+        /// <summary>LAYER 1 — stick army silhouette strip (army_&lt;faction&gt;), or null.</summary>
+        public Sprite Army(string faction) => Get("army_" + faction);
     }
 }

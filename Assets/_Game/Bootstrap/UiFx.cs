@@ -160,6 +160,23 @@ namespace Bulwark.Bootstrap
         }
     }
 
+    /// <summary>Generic late-binder: swaps an Image to a UiAssets sprite once the async load completes.
+    /// Used by the Phase-3 layer helper (plates/characters) so screens built pre-load still populate.</summary>
+    public sealed class UiAssetBinder : MonoBehaviour
+    {
+        private Image _img; private System.Func<UiAssets, Sprite> _get; private bool _done; private bool _preserve;
+        public void Init(Image img, System.Func<UiAssets, Sprite> get, bool preserveAspect)
+        { _img = img; _get = get; _preserve = preserveAspect; }
+        private void Update()
+        {
+            if (_done || _img == null) return;
+            var a = UiAssets.Instance; if (a == null || !a.Ready) return;
+            var s = _get != null ? _get(a) : null;
+            if (s != null) { _img.sprite = s; _img.color = Color.white; _img.preserveAspect = _preserve; }
+            _done = true;
+        }
+    }
+
     /// <summary>Smoothly tweens an integer display toward a target (loading %, reward counters). Tabular-safe.</summary>
     public sealed class CountUp : MonoBehaviour
     {

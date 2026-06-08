@@ -30,11 +30,13 @@ namespace Bulwark.Bootstrap
             _victory = PendingVictory;
 
             // ---- Full-bleed background ----
-            UiWidgets.Backdrop(Rect, _victory ? "victory" : "defeat");
+            UiLayers.Plate(Rect, _victory ? "victory" : "defeat", 0f); // LAYER 0 clean plate
             if (!_victory) UiWidgets.Stretch("BG_Desaturate", Rect, UiTheme.A(new Color(0.23f, 0.25f, 0.28f), 0.5f)); // cold grey-blue grade
             if (_victory) UiWidgets.Glow(Rect, UiTheme.A(Hex("#f4dca0"), 0.3f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -60), new Vector2(1200, 900), 1.4f); // god-rays
             UiWidgets.Vignette(Rect, 0.6f);
             UiWidgets.Stretch("BG_DarkenScrim", Rect, new Color(0, 0, 0, _victory ? 0.38f : 0.42f));
+            // LAYER 1: stick hero — cheering (victory) / kneeling defeated (defeat), to the side of the panel
+            UiLayers.Character(SafeContent, _victory ? "cheer" : "kneel", new Vector2(0.80f, 0.34f), Vector2.zero, _victory ? 520f : 470f);
 
             // ---- Result panel (centred card) ----
             float panelH = _victory ? 994 : 929;

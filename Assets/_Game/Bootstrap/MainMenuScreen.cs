@@ -21,14 +21,13 @@ namespace Bulwark.Bootstrap
 
         protected override void Build()
         {
-            // ---- BG_Layer: bright daylight hub (never darken). Placeholder art lifted with a sky gradient. ----
-            UiWidgets.Backdrop(Rect, "mainmenu");
-            var sky = UiWidgets.Rect("Sky", Rect, new Vector2(0, 0.5f), new Vector2(1, 1), Vector2.zero, Vector2.zero);
-            sky.anchorMin = new Vector2(0, 0.45f); sky.anchorMax = Vector2.one; sky.offsetMin = Vector2.zero; sky.offsetMax = Vector2.zero;
-            var skyImg = sky.gameObject.AddComponent<Image>(); skyImg.raycastTarget = false;
-            skyImg.sprite = UiTex.VGradient(UiTheme.A(UiTheme.IronBlueHi, 0.45f), UiTheme.A(UiTheme.IronBlueHi, 0f), 64);
-            UiWidgets.Glow(Rect, UiTheme.A(UiTheme.GoldHi, 0.3f), new Vector2(0.2f, 1f), new Vector2(0.2f, 1f), new Vector2(0, -120), new Vector2(1300, 900), 1.5f); // upper-left god-rays
-            UiWidgets.Vignette(Rect, 0.32f); // gentle only
+            // ---- LAYER 0: clean UI-free plate (bright day kingdom) ----
+            UiLayers.Plate(Rect, "mainmenu", 0.12f);
+            UiWidgets.Glow(Rect, UiTheme.A(UiTheme.GoldHi, 0.25f), new Vector2(0.2f, 1f), new Vector2(0.2f, 1f), new Vector2(0, -120), new Vector2(1300, 900), 1.5f); // upper-left god-rays
+            // ---- LAYER 1: stick hero trio (left foreground) — archer / king / mage ----
+            UiLayers.Character(SafeContent, "archer", new Vector2(0.055f, 0.40f), Vector2.zero, 470f);
+            UiLayers.Character(SafeContent, "king",   new Vector2(0.135f, 0.37f), Vector2.zero, 600f);
+            UiLayers.Character(SafeContent, "mage",   new Vector2(0.215f, 0.40f), Vector2.zero, 500f);
 
             // ---- Currency pills (top-right): Gold rightmost (idx 0), Gems left of it (idx 1) ----
             _goldText = UiWidgets.CurrencyChip(SafeContent, UiTheme.Gold, UiStub.Gold, 0, out _);
