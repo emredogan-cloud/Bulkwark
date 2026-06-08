@@ -29,9 +29,6 @@ namespace Bulwark.Bootstrap
             _bg = UiLayers.Plate(Rect, "loading", 0.20f); // LAYER 0 clean plate
             _bg.gameObject.AddComponent<KenBurns>().from = 1.05f;
             ApplyBackground();
-            // LAYER 1: two stick armies converging on the centre citadel
-            UiLayers.Army(SafeContent, "blue", new Vector2(0f, 0f), new Vector2(0.52f, 0f), 90f, 230f);
-            UiLayers.Army(SafeContent, "red", new Vector2(0.48f, 0f), new Vector2(1f, 0f), 90f, 230f);
 
             // Left-blue / right-red flank framing (symmetric about the centre citadel).
             var lRt = UiWidgets.Rect("Flank_Left", Rect, Vector2.zero, new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
@@ -48,6 +45,9 @@ namespace Bulwark.Bootstrap
             var emberHost = UiWidgets.Rect("Embers", Rect, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, 380), new Vector2(1200, 720));
             emberHost.gameObject.AddComponent<EmberField>().count = 18;
             UiWidgets.Vignette(Rect, 0.60f); // heaviest boot frame
+            // LAYER 1: two stick armies converging on the citadel, placed ABOVE the atmosphere
+            UiLayers.Army(Rect, "blue", new Vector2(0f, 0f), new Vector2(0.52f, 0f), 90f, 230f);
+            UiLayers.Army(Rect, "red", new Vector2(0.48f, 0f), new Vector2(1f, 0f), 90f, 230f);
 
             // ---- LoadingHUD_Group (low-centre) ----
             // LOADING label (fy≈0.74 → anchorY 0.26) with flank flourishes.

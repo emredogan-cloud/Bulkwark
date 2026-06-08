@@ -38,7 +38,6 @@ namespace Bulwark.Bootstrap
             _bg = UiLayers.Plate(Rect, "splash", 0.22f); // LAYER 0 clean plate
             _bg.gameObject.AddComponent<KenBurns>(); // slow Ken-Burns push-out 1.06 → 1.00
             ApplyBackground();
-            UiLayers.Character(SafeContent, "king", new Vector2(0.17f, 0.42f), Vector2.zero, 640f); // LAYER 1 hero
 
             // Temperature split: cool steel-blue LEFT (Iron Pact) vs hot ember-orange RIGHT (Ashen) — never symmetric.
             var coolRt = UiWidgets.Rect("Temp_CoolLeft", Rect, Vector2.zero, new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
@@ -57,6 +56,8 @@ namespace Bulwark.Bootstrap
             emberHost.gameObject.AddComponent<EmberField>().count = 16;
             // Vignette (≈55%) darkens the four corners.
             UiWidgets.Vignette(Rect, 0.55f);
+            // ---- LAYER 1: stick king hero (left foreground), placed ABOVE the atmosphere so it reads ----
+            UiLayers.Character(Rect, "king", new Vector2(0.16f, 0.40f), Vector2.zero, 640f);
 
             // ---- BrandPlaque_Group (centred, fy≈0.245 from top → anchorY 0.755) ----
             var plaqueGo = new GameObject("BrandPlaque_Group", typeof(RectTransform), typeof(CanvasGroup));
