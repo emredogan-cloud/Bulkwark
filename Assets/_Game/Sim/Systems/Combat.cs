@@ -228,8 +228,8 @@ namespace Bulwark.Sim
         // teams. Casualties then outpace gold-limited reinforcement → the line thins → units (high StatueBonus)
         // pour through → a statue falls. The marginally-stronger side (jitter/position) wins → BOTH outcomes;
         // bounded match length (first contact ~44s, resolution ~110-140s). NOT a balance edge (no side favored).
-        private const float kEscalationStartSec = 40f;  // overtime begins (after the economy/contact phase)
-        private const float kEscalationRate     = 0.08f; // +8% base damage per second after the start
+        private const float kEscalationStartSec = 35f;  // overtime begins (after the economy/contact phase). build-5: 40→35
+        private const float kEscalationRate     = 0.12f; // +12% base damage per second. build-5: 0.08→0.12 (break the line more reliably)
         private const float kEscalationCap      = 10f;   // hard ceiling on the multiplier (prevents runaway)
 
         [BurstCompile]

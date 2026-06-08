@@ -326,7 +326,7 @@ MonoBehaviour:
   aiCommander: {fileID: 11400000, guid: bfb74ee0c2cbe01089c8bad711394d6b, type: 2}
   battleCamera: {fileID: 1713090283}
   rowSpacing: 2.5
-  statueMaxHealth: 500
+  statueMaxHealth: 300
   statueShieldHealth: 0
   statueTrickleThrottle: 0.5
   startingGold: 100

@@ -79,6 +79,21 @@ grinding a 1250-HP statue, too slow to finish in ~150 s.
 placed in a scene, the serialized scene value overrides the C# field initializer — balance changes to such fields
 must edit the scene asset, not just the code default.
 
+## Build-4 result → Build-5 (final nudge) + DEVICE BLOCKER
+**Build-4** (statue actually 500/0, all four levers live): the captured matches (device dropped after ~3) PROVED
+the fix works — **m1 organic Defeat at 74 s** (`sP=-9`), **m2 drove the AI statue to 136** (364 dmg — a near
+player-win, cut off Ongoing at the 138 s window), m3 chipping; statue confirmed 500; no probe. So both sides can
+win and matches resolve — a real transformation from 0/20. But resolution looked **borderline / at threshold**
+(strong-breakthrough matches resolve; weak-breakthrough ones do not), and the window was too short.
+**Build-5 (final nudge):** `MainScene.unity` statue **500→300** (convert the m2-type near-misses into kills) +
+`Combat.cs` escalation **start 40→35, rate 0.08→0.12** (collapse the balanced line more reliably so weak-breakthrough
+matches also resolve). Symmetric/fair. Targets a clean majority-resolve in a ~70–120 s mobile band, both outcomes.
+**DEVICE BLOCKER (blocking Phase-E validation):** the test device (Redmi Note 11R) degraded across the long
+sessions — USB drops mid-match, the sideloaded app got auto-uninstalled, and reinstall is now refused
+(`INSTALL_FAILED_USER_RESTRICTED` — MIUI "Install via USB" permission reverted). A clean 20-match run requires the
+device permission re-enabled + a stable cable. Build-5 is committed + CI-verified so it can be validated as soon as
+the device is restored.
+
 ## Build/validation budget
 One CI build; the 20-match campaign runs on that same APK. il2cpp segfault = transient flake → auto-retry the
 same commit (never a new build). Result + verdict → `05_…` then `GATE1_PASS_REPORT.md` / `GATE1_FAIL_REPORT.md`.
