@@ -163,6 +163,9 @@ namespace Bulwark.Bootstrap
             var bd = UiAssets.Instance != null ? UiAssets.Instance.Backdrop(screenKey) : null;
             if (bd != null) { img.sprite = bd; img.color = Color.white; img.preserveAspect = false; }
             img.gameObject.AddComponent<BackdropBinder>().Init(img, screenKey);
+            // Scrim over the backdrop: the mockups have baked UI (wrong-brand logos/titles); this dims them so the
+            // live BULWARK chrome on top dominates, while the atmospheric art still reads through.
+            var scrim = Stretch("BackdropScrim_" + screenKey, fullBleed, new Color(0f, 0f, 0f, 0.45f)); scrim.raycastTarget = false;
             return img;
         }
 

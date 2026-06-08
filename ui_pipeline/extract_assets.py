@@ -55,6 +55,25 @@ def recolor(im, target, boost=1.45):
                 px[x,y] = (min(255,int(tr*lum*boost)), min(255,int(tg*lum*boost)), min(255,int(tb*lum*boost)), a)
     return im
 
+def clean_button(im):
+    """Erase the baked centre label (RESUME/etc.) by stamping a clean body column across the middle;
+    keeps the gold rim (top/bottom) + the end flourishes (~18%/82%) so only the text region is replaced."""
+    im = im.convert("RGBA"); px = im.load(); w, h = im.size; sx = int(w*0.22)
+    for x in range(int(w*0.26), int(w*0.74)):
+        for y in range(int(h*0.12), int(h*0.88)):
+            px[x, y] = px[sx, y]
+    return im
+
+def clean_panel(im):
+    """Erase the baked interior (PAUSED title + 3 buttons) → subtle dark obsidian gradient; keep the gold frame."""
+    im = im.convert("RGBA"); px = im.load(); w, h = im.size
+    x0,x1,y0,y1 = int(w*0.13),int(w*0.87),int(h*0.12),int(h*0.88)
+    for y in range(y0, y1):
+        t = (y-y0)/max(1,(y1-y0))
+        col = (int(20*(1-t)+10*t), int(22*(1-t)+11*t), int(30*(1-t)+15*t), 255)
+        for x in range(x0, x1): px[x, y] = col
+    return im
+
 # ---- 1) backdrops (JPG q82, 1000w) ----
 for key,name in SCREENS.items():
     im = src(name); w,h = im.size
@@ -66,14 +85,14 @@ def dn(im, w=512):
     return im.resize((w, int(im.height*w/im.width)), Image.LANCZOS) if im.width > w else im
 def savek(im, out, w=512): dn(im,w).save(os.path.join(OUT,out+".png"))
 
-panel = crop_frac("PauseModalDesign", (0.28,0.105,0.72,0.95))       # gold ornate panel (gem dropped → no top smear)
+panel = clean_panel(crop_frac("PauseModalDesign", (0.28,0.105,0.72,0.95)))   # gold ornate frame, interior cleaned
 savek(panel,"kit_panel_ornate")
 savek(crop_frac("PauseModalDesign", (0.452,0.0,0.548,0.088)),"kit_finial",128)  # blue gem finial
 
-blue = crop_frac("PauseModalDesign", (0.345,0.315,0.655,0.452))     # RESUME (clean blue gem button)
-savek(blue,"kit_btn_blue")
-savek(crop_frac("PauseModalDesign", (0.345,0.475,0.655,0.60)),"kit_btn_dark")   # SETTINGS (dark steel)
-savek(crop_frac("PauseModalDesign", (0.345,0.625,0.655,0.762)),"kit_btn_red")   # SURRENDER (oxblood)
+blue = clean_button(crop_frac("PauseModalDesign", (0.345,0.315,0.655,0.452)))   # blue gem button (text erased)
+dark = clean_button(crop_frac("PauseModalDesign", (0.345,0.475,0.655,0.60)))    # dark steel
+red  = clean_button(crop_frac("PauseModalDesign", (0.345,0.625,0.655,0.762)))   # oxblood
+savek(blue,"kit_btn_blue"); savek(dark,"kit_btn_dark"); savek(red,"kit_btn_red")
 savek(recolor(blue,(225,170,55)),"kit_btn_gold")    # gold/orange
 savek(recolor(blue,(70,165,60)),"kit_btn_green")    # emerald
 savek(recolor(blue,(150,80,200)),"kit_btn_purple")  # amethyst
