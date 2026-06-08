@@ -38,5 +38,28 @@ public static class LocalBuild
         Debug.Log($"[LOCALBUILD] result={s.result} errors={s.totalErrors} warnings={s.totalWarnings} sizeBytes={s.totalSize} out={s.outputPath}");
         EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
     }
+
+    // Linux standalone — lets the game run + be screenshotted on this PC (Unity runtime) when device install
+    // is blocked (MIUI), satisfying the runtime-evidence validation rule. Editor-only tool; not shipped.
+    public static void BuildLinux()
+    {
+        var enabled = System.Array.FindAll(EditorBuildSettings.scenes, s => s.enabled && !string.IsNullOrEmpty(s.path));
+        var paths = System.Array.ConvertAll(enabled, s => s.path);
+        if (paths.Length == 0) paths = new[] { "Assets/MainScene.unity" };
+        System.IO.Directory.CreateDirectory("/tmp/p3build/linux");
+        var opts = new BuildPlayerOptions
+        {
+            scenes = paths,
+            locationPathName = "/tmp/p3build/linux/BULWARK.x86_64",
+            target = BuildTarget.StandaloneLinux64,
+            targetGroup = BuildTargetGroup.Standalone,
+            options = BuildOptions.Development,
+        };
+        Debug.Log("[LOCALBUILD] linux start; scenes=" + string.Join(",", paths));
+        var report = BuildPipeline.BuildPlayer(opts);
+        var s = report.summary;
+        Debug.Log($"[LOCALBUILD] linux result={s.result} errors={s.totalErrors} out={s.outputPath}");
+        EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
+    }
 }
 #endif
