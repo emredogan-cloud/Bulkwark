@@ -151,6 +151,10 @@ def stick(name, accent, weapon=None, crown=False, hat=False, hood=False, cape=No
     if shield:
         sx=cx-int(head_r*1.25); sy=shoulder+int(h*0.16)
         d.ellipse([sx-int(head_r*0.8),sy-int(head_r*1.0),sx+int(head_r*0.8),sy+int(head_r*1.0)],fill=accent,outline=GOLD,width=int(8*SS))
+    # light rim so the black silhouette reads on dark backgrounds (Splash/Defeat/etc.)
+    a=im.split()[3]; rim=a.filter(ImageFilter.MaxFilter(2*SS+1))
+    rimimg=Image.new("RGBA",im.size,(0,0,0,0)); rimimg.paste((232,212,150,205),mask=rim)
+    im=Image.alpha_composite(rimimg,im)
     im=im.resize((W,H),Image.LANCZOS)
     im.save(os.path.join(OUT,"char_"+name+".png"))
 
