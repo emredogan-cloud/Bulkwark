@@ -231,6 +231,13 @@ namespace Bulwark.Bootstrap
             px.Go.transform.position = new Vector3(p.x, p.y, 0f);
             Sprite spr = PlaceholderAssets.Instance != null ? PlaceholderAssets.Instance.Get(SpriteKey(kind, arch)) : null;
             if (spr == null) spr = Fallback();
+            // AAA faction statue art (left=blue Iron Pact, right=red Ashen Horde) when loaded.
+            if (kind == Kind.Statue && UiAssets.Instance != null)
+            {
+                float cxw = _cam != null ? _cam.transform.position.x : 0f;
+                var sa = UiAssets.Instance.Get(p.x <= cxw ? "statue_blue" : "statue_red");
+                if (sa != null) spr = sa;
+            }
             px.Sr.sprite = spr;
             float spriteH = spr.bounds.size.y; if (spriteH < 0.01f) spriteH = 1f;
             float baseScale = (kind == Kind.Statue ? 3.0f : 1.3f) / spriteH;

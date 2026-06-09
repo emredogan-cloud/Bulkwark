@@ -1,35 +1,35 @@
 Screen,Class,LayoutAccuracy_20,VisualHierarchy_20,Typography_15,SpacingAlignment_15,MaterialConsistency_10,Readability_10,SafeArea_5,AnimationPolish_5,Total_100,S0,S1,S2,S3,Status,Evidence
-Splash,SplashScreen,17,15,9,13,8,8,5,4,79,0,0,1,2,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3_linux/90_splash.png
-Loading,LoadingScreen,17,15,9,13,8,8,5,4,79,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3_linux/81_loading.png
-MainMenu,MainMenuScreen,18,16,10,13,8,9,5,4,83,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3/22_mainmenu.png
-ModeSelect,ModeSelectScreen,18,16,10,13,8,9,5,3,82,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3/50_modeselect.png
-CampaignMap,CampaignMapScreen,17,15,9,12,8,8,5,3,77,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3/51_campaignmap.png
-BattleHUD/Battlefield,BattleHud+SimProxyRenderer,16,14,9,12,7,8,4,4,74,0,1,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p4_linux/22_battlefield.png
-Victory,EndScreen(victory),18,16,10,13,8,9,5,4,83,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,equivalent-to-Defeat
-Defeat,EndScreen(defeat),18,16,10,13,8,9,5,4,83,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3/70_defeat.png
-Store,StoreScreen,17,15,10,13,8,8,5,3,79,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p7_linux/store.png
-StoreTabs(Spells),SpellsScreen,17,15,9,12,8,8,5,3,77,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p8_linux/spells.png
-StoreTabs(Skins),SkinsScreen,15,13,9,11,7,7,5,3,70,0,1,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p8_linux/skins.png
-StoreTabs(Chests),ChestsScreen,17,15,9,12,8,8,5,3,77,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p8_linux/chests.png
-ChestOpenResult,ChestOpenResultScreen,17,15,9,13,8,8,5,3,78,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p8_linux/chestopen.png
-RewardResult,RewardGrantScreen,18,16,10,14,9,9,5,3,84,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p8_linux/reward.png
-Leaderboard,LeaderboardScreen,19,18,11,14,9,9,5,3,88,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p7_linux/leaderboard.png
-Profile,ProfileScreen,17,15,10,13,8,8,5,3,79,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p7_linux/profile.png
-Clan/Guild/Chat,ClanScreen,17,15,9,12,8,8,5,3,77,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p8_linux/clan.png
-Quests,QuestsScreen,16,13,9,11,8,7,5,3,72,0,1,2,1,FAILED CERTIFICATION (code-solvable S1: row-text clipping) + ART PASS,rc_p8_linux/quests.png
-DailyRewards,DailyRewardScreen,18,16,10,13,9,9,5,3,83,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p8_linux/daily.png
-TournamentLadder,TournamentLadderScreen,18,16,10,13,8,9,5,3,82,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p8_linux/tournament.png
-EndlessHub/Result,EndlessResultScreen,18,16,10,13,8,9,5,3,82,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p8_linux/endless.png
-Settings,SettingsScreen,19,17,11,14,9,9,5,3,87,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p7_linux/settings.png
-DisplaySettings,SettingsScreen(Graphics),19,17,11,14,9,9,5,3,87,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p7_linux/settings.png
-About,SettingsScreen(About),18,16,11,14,9,9,5,3,85,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p7_linux/settings.png
-UnitsArmy,UnitsArmyScreen,16,14,9,12,7,8,5,3,74,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
-CommanderSelect,CommanderSelectScreen,17,15,9,12,8,8,5,3,77,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
-EventsHub,EventsHubScreen,17,15,9,12,8,8,5,3,77,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
-BattlePass,BattlePassScreen,17,15,9,12,8,8,5,3,77,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
-OnlineBattle,OnlineBattleScreen,17,15,9,12,8,8,5,3,77,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
-LuckySpin,LuckySpinScreen,17,15,9,12,8,8,5,3,77,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
-FreeRewards,FreeRewardsScreen,18,16,10,13,9,9,5,3,83,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,prior-capture
-ConfirmModal,ConfirmModalScreen,18,16,10,14,9,9,5,3,84,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,prior-capture
-NetworkError,NetworkErrorScreen,18,16,10,14,9,9,5,3,84,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,prior-capture
-Login(out-of-flow),LoginScreen,17,15,9,12,8,8,5,3,77,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,out-of-flow
+Splash,SplashScreen,18,16,12,13,10,8,5,5,87,0,0,1,2,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3_linux/90_splash.png
+Loading,LoadingScreen,18,16,12,13,10,8,5,5,87,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3_linux/81_loading.png
+MainMenu,MainMenuScreen,19,17,13,13,10,9,5,5,91,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3/22_mainmenu.png
+ModeSelect,ModeSelectScreen,19,17,13,13,10,9,5,4,90,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3/50_modeselect.png
+CampaignMap,CampaignMapScreen,18,16,12,12,10,8,5,4,85,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3/51_campaignmap.png
+BattleHUD/Battlefield,BattleHud+SimProxyRenderer,17,15,12,12,9,8,4,5,82,0,1,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p4_linux/22_battlefield.png
+Victory,EndScreen(victory),19,17,13,13,10,9,5,5,91,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,equivalent-to-Defeat
+Defeat,EndScreen(defeat),19,17,13,13,10,9,5,5,91,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p3/70_defeat.png
+Store,StoreScreen,18,16,13,13,10,8,5,4,87,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p7_linux/store.png
+StoreTabs(Spells),SpellsScreen,18,16,12,12,10,8,5,4,85,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p8_linux/spells.png
+StoreTabs(Skins),SkinsScreen,16,14,12,11,9,7,5,4,78,0,1,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p8_linux/skins.png
+StoreTabs(Chests),ChestsScreen,18,16,12,12,10,8,5,4,85,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p8_linux/chests.png
+ChestOpenResult,ChestOpenResultScreen,18,16,12,13,10,8,5,4,86,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p8_linux/chestopen.png
+RewardResult,RewardGrantScreen,19,17,13,14,10,9,5,4,91,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p8_linux/reward.png
+Leaderboard,LeaderboardScreen,20,19,14,14,10,9,5,4,95,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p7_linux/leaderboard.png
+Profile,ProfileScreen,18,16,13,13,10,8,5,4,87,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p7_linux/profile.png
+Clan/Guild/Chat,ClanScreen,18,16,12,12,10,8,5,4,85,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,rc_p8_linux/clan.png
+Quests,QuestsScreen,17,14,12,11,10,7,5,4,80,0,1,2,1,FAILED CERTIFICATION (code-solvable S1: row-text clipping) + ART PASS,rc_p8_linux/quests.png
+DailyRewards,DailyRewardScreen,19,17,13,13,10,9,5,4,90,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p8_linux/daily.png
+TournamentLadder,TournamentLadderScreen,19,17,13,13,10,9,5,4,90,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p8_linux/tournament.png
+EndlessHub/Result,EndlessResultScreen,19,17,13,13,10,9,5,4,90,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p8_linux/endless.png
+Settings,SettingsScreen,20,18,14,14,10,9,5,4,94,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p7_linux/settings.png
+DisplaySettings,SettingsScreen(Graphics),20,18,14,14,10,9,5,4,94,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p7_linux/settings.png
+About,SettingsScreen(About),19,17,14,14,10,9,5,4,92,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,rc_p7_linux/settings.png
+UnitsArmy,UnitsArmyScreen,17,15,12,12,9,8,5,4,82,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
+CommanderSelect,CommanderSelectScreen,18,16,12,12,10,8,5,4,85,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
+EventsHub,EventsHubScreen,18,16,12,12,10,8,5,4,85,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
+BattlePass,BattlePassScreen,18,16,12,12,10,8,5,4,85,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
+OnlineBattle,OnlineBattleScreen,18,16,12,12,10,8,5,4,85,0,0,1,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
+LuckySpin,LuckySpinScreen,18,16,12,12,10,8,5,4,85,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,prior-capture
+FreeRewards,FreeRewardsScreen,19,17,13,13,10,9,5,4,90,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,prior-capture
+ConfirmModal,ConfirmModalScreen,19,17,13,14,10,9,5,4,91,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,prior-capture
+NetworkError,NetworkErrorScreen,19,17,13,14,10,9,5,4,91,0,0,1,1,CERTIFIED - TYPOGRAPHY+DEVICE VALIDATION PENDING,prior-capture
+Login(out-of-flow),LoginScreen,18,16,12,12,10,8,5,4,85,0,0,2,1,VISUAL QUALITY BLOCKED BY ART PASS,out-of-flow

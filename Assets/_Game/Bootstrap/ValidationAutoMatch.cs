@@ -68,6 +68,9 @@ namespace Bulwark.Bootstrap
                 case "battlepass": r.Show<BattlePassScreen>(); break;
                 case "online": r.Show<OnlineBattleScreen>(); break;
                 case "commander": r.Show<CommanderSelectScreen>(); break;
+                case "mainmenu": r.Show<MainMenuScreen>(); break;
+                case "modeselect": r.Show<ModeSelectScreen>(); break;
+                case "campaignmap": r.Show<CampaignMapScreen>(); break;
                 default: Debug.LogWarning("[AUTOSHOW] unknown screen " + n); break;
             }
         }

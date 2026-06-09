@@ -25,7 +25,9 @@ namespace Bulwark.Bootstrap
         public static readonly Color Dark     = UiTheme.Obsidian;
 
         private static Font _font;
-        public static Font Font => _font != null ? _font : (_font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));
+        // Typography swap: the injected display TTF (PirataOne) from Resources, falling back to the builtin font.
+        public static Font Font => _font != null ? _font
+            : (_font = Resources.Load<Font>("Fonts/StickForge_Display") ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));
 
         public static Sprite Spr(string key) => PlaceholderAssets.Instance != null ? PlaceholderAssets.Instance.Get(key) : null;
 

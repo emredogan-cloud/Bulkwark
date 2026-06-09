@@ -37,8 +37,8 @@ namespace Bulwark.Bootstrap
             ("kit_btn_blue", 0.17f, 0.22f), ("kit_btn_dark", 0.17f, 0.22f), ("kit_btn_red", 0.17f, 0.22f),
             ("kit_btn_gold", 0.17f, 0.22f), ("kit_btn_green", 0.17f, 0.22f), ("kit_btn_purple", 0.17f, 0.22f),
         };
-        // plain sprites (PNG): finial + icons.
-        private static readonly string[] Plain = { "kit_finial", "ic_coin", "ic_gem" };
+        // plain sprites (PNG): finial + icons + AAA faction statues.
+        private static readonly string[] Plain = { "kit_finial", "ic_coin", "ic_gem", "statue_blue", "statue_red" };
         // LAYER 0 — clean UI-free background plates (JPG). No baked text/UI (Phase-3 architecture).
         private static readonly string[] Plates =
         { "splash", "loading", "mainmenu", "modeselect", "campaignmap", "battlehud", "victory", "defeat",

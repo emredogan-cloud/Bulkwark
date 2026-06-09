@@ -35,8 +35,8 @@ namespace Bulwark.Bootstrap
             Debug.Log("[BFX] BattlefieldParallax booted.");
         }
 
-        // --- biome (default Grasslands; battle modes can set this via SetBiome before/at match start) ---
-        public static string Biome = "grass";
+        // --- biome (default = the injected painted SIEGE parallax; modes can override before match start) ---
+        public static string Biome = "siege";
 
         private struct Layer { public SpriteRenderer Sr; public float Parallax; public float Anchor; public int Order; }
         private Layer _sky, _horizon, _mid, _ground, _fg;
