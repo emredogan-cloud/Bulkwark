@@ -41,7 +41,7 @@ namespace Bulwark.Bootstrap
         protected override void Build()
         {
             // ===== BackgroundLayer (full-bleed under the cutout → Rect) =====
-            UiWidgets.Backdrop(Rect, "settings");
+            UiLayers.Plate(Rect, "settings", 0.30f);
             // Warm brazier focal glow + faint embers (atmospheric, low-key; never over controls — kept upper area).
             UiWidgets.Glow(Rect, UiTheme.A(UiTheme.Ember, 0.18f), new Vector2(0.2f, 0.85f), new Vector2(0.2f, 0.85f), Vector2.zero, new Vector2(1100, 900), 1.7f);
             UiWidgets.Glow(Rect, UiTheme.A(UiTheme.Ember, 0.15f), new Vector2(0.85f, 0.85f), new Vector2(0.85f, 0.85f), Vector2.zero, new Vector2(1000, 800), 1.7f);

@@ -61,6 +61,7 @@ def main():
     env = dict(os.environ)
     env['BULWARK_AUTOMATCH'] = '1'
     env['BULWARK_BIOME'] = os.environ.get('BIOME', 'grass')
+    env['BULWARK_SHOWSCREEN'] = os.environ.get('SHOW', '')  # if set, open that meta screen instead of a match
     proc = subprocess.Popen([EXE, '-screen-width', str(W), '-screen-height', str(H),
                              '-screen-fullscreen', '0', '-force-glcore', '-logFile', '/tmp/brun4.log'], env=env)
     print('launched pid', proc.pid, 'biome', env['BULWARK_BIOME'], flush=True)

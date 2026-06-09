@@ -61,7 +61,7 @@ namespace Bulwark.Bootstrap
             // Section D/E/G: dim battlefield at dusk with deep-blue faction banners + braziers, heavily
             // darkened so the panel pops, under a ~58% black input-BLOCKING scrim.
             // ============================================================================================
-            var amb = UiWidgets.Backdrop(Rect, "rewardgrant");
+            var amb = UiLayers.Plate(Rect, "rewardgrant", 0.30f);
             amb.raycastTarget = false;
             // Cold dusk grade over the ambience (deep blue-black), keeps the battlefield read but subdued.
             var grade = UiWidgets.Rect("BG_Grade", Rect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);

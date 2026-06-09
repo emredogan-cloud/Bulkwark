@@ -126,7 +126,7 @@ namespace Bulwark.Bootstrap
             // FULL-BLEED BACKDROP + SCRIM + GOD-RAY (Rect; OUTSIDE safe area → under the cutout). Section C/D.
             // ============================================================================================
             // FullBleedBackdrop: a static hub snapshot stand-in (the live hub bleeds through dimmed).
-            UiWidgets.Backdrop(Rect, "daily");
+            UiLayers.Plate(Rect, "daily", 0.30f);
             // DimScrim: near-black ~70% over the hub (Section B/D).
             UiWidgets.Stretch("DimScrim", Rect, new Color(0f, 0f, 0f, 0.70f));
             // Vignette: radial → dark edges (Section D/J).

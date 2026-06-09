@@ -39,7 +39,7 @@ namespace Bulwark.Bootstrap
         {
             // =================== FULL-BLEED BACKGROUND + FX (Rect; ignores safe area) ===================
             // BG_HordeField: dark ember-lit ruined battlefield, pushed far back.
-            var bg = UiWidgets.Backdrop(Rect, "endlessresult");
+            var bg = UiLayers.Plate(Rect, "endlessresult", 0.30f);
             bg.gameObject.AddComponent<KenBurns>().from = 1.05f;
             // Faint red rim-glows (horde fire) low + sides.
             UiWidgets.Glow(Rect, UiTheme.A(Hex("#7a1c0a"), 0.32f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, 120), new Vector2(1700, 760), 1.7f);

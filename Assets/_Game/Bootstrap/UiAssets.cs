@@ -41,7 +41,10 @@ namespace Bulwark.Bootstrap
         private static readonly string[] Plain = { "kit_finial", "ic_coin", "ic_gem" };
         // LAYER 0 — clean UI-free background plates (JPG). No baked text/UI (Phase-3 architecture).
         private static readonly string[] Plates =
-        { "splash", "loading", "mainmenu", "modeselect", "campaignmap", "battlehud", "victory", "defeat" };
+        { "splash", "loading", "mainmenu", "modeselect", "campaignmap", "battlehud", "victory", "defeat",
+          // Phase-7 meta-screen clean plates (replace the baked-UI mockup backdrops)
+          "store", "chestopen", "rewardgrant", "leaderboard", "profile", "clan", "quests", "daily",
+          "tournament", "endlessresult", "settings", "about" };
         // LAYER 1 — stick-figure characters + army strips (PNG, transparent).
         private static readonly string[] CharPngs =
         {

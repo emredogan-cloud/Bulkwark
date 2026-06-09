@@ -19,7 +19,8 @@ namespace Bulwark.Bootstrap
         private static void Boot()
         {
             string v = System.Environment.GetEnvironmentVariable("BULWARK_AUTOMATCH");
-            if (string.IsNullOrEmpty(v) || v == "0") return; // validation-only; never on for normal play
+            string sc = System.Environment.GetEnvironmentVariable("BULWARK_SHOWSCREEN");
+            if ((string.IsNullOrEmpty(v) || v == "0") && string.IsNullOrEmpty(sc)) return; // validation-only; off for normal play
             var go = new GameObject("ValidationAutoMatch");
             go.AddComponent<ValidationAutoMatch>();
             DontDestroyOnLoad(go);
@@ -31,11 +32,36 @@ namespace Bulwark.Bootstrap
             string biome = System.Environment.GetEnvironmentVariable("BULWARK_BIOME");
             if (!string.IsNullOrEmpty(biome)) BattlefieldParallax.Biome = biome;
             yield return new WaitForSecondsRealtime(6f); // let boot → menu settle
+            string show = System.Environment.GetEnvironmentVariable("BULWARK_SHOWSCREEN");
+            if (!string.IsNullOrEmpty(show)) { Debug.Log("[AUTOSHOW] opening " + show); ShowScreen(show); yield break; }
             Debug.Log("[AUTOMATCH] starting Classic match (biome=" + BattlefieldParallax.Biome + ").");
             MatchPresentation.StartMatch("Classic");      // shows the VS intro
             yield return new WaitForSecondsRealtime(1.5f);
             MatchPresentation.Begin();                    // clear the shell + start the battle (InMatch=true)
             Debug.Log("[AUTOMATCH] battle begun (InMatch should be true).");
+        }
+
+        // Validation: open a named meta screen for runtime screenshotting (input simulation can't reach the standalone).
+        private static void ShowScreen(string n)
+        {
+            var r = UiRouter.Instance; if (r == null) return;
+            switch (n.ToLowerInvariant())
+            {
+                case "store": r.Show<StoreScreen>(); break;
+                case "leaderboard": r.Show<LeaderboardScreen>(); break;
+                case "profile": r.Show<ProfileScreen>(); break;
+                case "clan": r.Show<ClanScreen>(); break;
+                case "quests": r.Show<QuestsScreen>(); break;
+                case "daily": r.Show<DailyRewardScreen>(); break;
+                case "tournament": r.Show<TournamentLadderScreen>(); break;
+                case "settings": r.Show<SettingsScreen>(); break;
+                case "chests": r.Show<ChestsScreen>(); break;
+                case "spells": r.Show<SpellsScreen>(); break;
+                case "skins": r.Show<SkinsScreen>(); break;
+                case "units": r.Show<UnitsArmyScreen>(); break;
+                case "events": r.Show<EventsHubScreen>(); break;
+                default: Debug.LogWarning("[AUTOSHOW] unknown screen " + n); break;
+            }
         }
     }
 }

@@ -145,7 +145,7 @@ namespace Bulwark.Bootstrap
         // ---- BackgroundLayer (full-bleed, under cutout) → Rect. ----
         private void BuildBackground()
         {
-            UiWidgets.Backdrop(Rect, "clan"); // faint dusk castle wall
+            UiLayers.Plate(Rect, "clan", 0.30f); // faint dusk castle wall
             var grade = UiWidgets.Stretch("BG_Grade", Rect, Color.white); grade.raycastTarget = false;
             grade.sprite = UiTex.VGradient(Hex("#14161e"), Hex("#0a0b0f"), 64);
             UiWidgets.Vignette(Rect, 0.6f); // BG_Vignette (later sibling)

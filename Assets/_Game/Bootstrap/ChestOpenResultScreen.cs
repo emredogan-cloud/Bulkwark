@@ -55,7 +55,7 @@ namespace Bulwark.Bootstrap
             // FULL-BLEED BACKGROUND + LIGHT-BURST (Rect; OUTSIDE safe area → bleeds edge-to-edge under cutout).
             // ============================================================================================
             // Bg_FullBleed: dim crypt (#0a0b0f→#161a24), almost fully vignetted to black (Section G/D).
-            var bg = UiWidgets.Backdrop(Rect, "chestopen");
+            var bg = UiLayers.Plate(Rect, "chestopen", 0.30f);
             var bgGrad = UiWidgets.Rect("Bg_Grade", Rect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             var bgGi = bgGrad.gameObject.AddComponent<Image>(); bgGi.raycastTarget = false;
             bgGi.sprite = UiTex.VGradient(Hex("#161a24"), Hex("#0a0b0f"), 64);
