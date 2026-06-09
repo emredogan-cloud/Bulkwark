@@ -58,7 +58,10 @@ namespace Bulwark.Bootstrap
         {
             public GameObject Go;
             public SpriteRenderer Sr;
-            public SpriteAnimator Anim;   // procedural animator (units only; null otherwise) — presentation-only
+            public SpriteAnimator Anim;   // legacy procedural animator (fallback only)
+            public CharacterRig Rig;      // Phase-6 shared skeletal rig (units) — presentation-only
+            public bool Configured;
+            public Vector2 LastPos; public bool HasLast;
             public Kind Kind;
             public float LastHp;
             public float Flash;   // seconds of damage-flash remaining
@@ -178,18 +181,16 @@ namespace Bulwark.Bootstrap
                 Debug.Log($"[PROXY] SPAWN {kind} proxy (entity index {e.Index}).");
             }
 
-            // Lazy-attach the animator if it was missed at create (RuntimeInitialize boot-order race) — units only.
-            if (px.Anim == null && (kind == Kind.UnitP || kind == Kind.UnitAI) && AnimationManager.Instance != null)
-                px.Anim = AnimationManager.Instance.Attach(px.Go, px.Sr);
+            bool isUnit = kind == Kind.UnitP || kind == Kind.UnitAI;
 
-            // Combat viz: a drop in HP since last frame -> flash white briefly (+ throttled hit SFX + impact VFX).
+            // Combat viz: a drop in HP since last frame -> flash + hit reaction + impact VFX + camera shake.
             if (curHp >= 0f && curHp < px.LastHp - 0.01f)
             {
                 px.Flash = 0.25f;
                 if (PresentationState.InMatch)
                 {
                     AudioManager.Instance?.Hit();
-                    px.Anim?.NotifyHit(); // procedural recoil reaction (units only)
+                    px.Rig?.Flinch(); px.Anim?.NotifyHit();
                     var fxPos = new Vector3(p.x, p.y, 0f);
                     if (kind == Kind.Statue) { VfxManager.Instance?.StatueDamage(fxPos); CamShake = Mathf.Min(0.18f, CamShake + 0.18f); }
                     else { VfxManager.Instance?.Impact(fxPos); CamShake = Mathf.Min(0.18f, CamShake + 0.04f); }
@@ -197,28 +198,47 @@ namespace Bulwark.Bootstrap
             }
             px.LastHp = curHp;
 
-            // Position on the z=0 battlefield plane.
-            px.Go.transform.position = new Vector3(p.x, p.y, 0f);
+            // ---- RIGGED UNIT: the shared skeletal rig owns the visual (animation mirrors ECS movement/HP) ----
+            if (isUnit && px.Rig != null)
+            {
+                bool blue = kind == Kind.UnitP;
+                if (!px.Configured) { px.Rig.Configure((CharacterRig.Arch)arch, blue, 2); px.Configured = true; }
+                float dt = Time.unscaledDeltaTime;
+                float speed = (px.HasLast && dt > 0f) ? (new Vector2(p.x, p.y) - px.LastPos).magnitude / dt : 0f;
+                px.LastPos = new Vector2(p.x, p.y); px.HasLast = true;
+                if (px.Rig.Built)
+                {
+                    if (px.Sr.enabled) px.Sr.enabled = false;
+                    px.Rig.SetLod(_proxies.Count > 50 ? 2 : _proxies.Count > 25 ? 1 : 0); // scale anim cost with battlefield load
+                    var s = px.Rig.CurrentState;
+                    if (s != CharacterRig.St.Hit && s != CharacterRig.St.Death && s != CharacterRig.St.Attack && s != CharacterRig.St.Cast)
+                        px.Rig.SetState(speed > 0.6f ? CharacterRig.St.Walk : (arch == Arch.Miner ? CharacterRig.St.Mine : CharacterRig.St.Idle));
+                    float vSq = 0.85f + 0.15f * hpFrac, S = 1.7f;
+                    px.Go.transform.position = new Vector3(p.x, p.y - 0.8f, 0f);
+                    px.Go.transform.localScale = new Vector3(S * (blue ? 1f : -1f), S * vSq, S); // mirror by faction (face the enemy)
+                }
+                else // fallback: simple sprite until the rig sprites finish loading
+                {
+                    px.Go.transform.position = new Vector3(p.x, p.y, 0f);
+                    Sprite s0 = PlaceholderAssets.Instance != null ? PlaceholderAssets.Instance.Get(SpriteKey(kind, arch)) : null; if (s0 == null) s0 = Fallback();
+                    px.Sr.sprite = s0; float h0 = s0.bounds.size.y; if (h0 < 0.01f) h0 = 1f; float bs = 1.7f / h0;
+                    px.Sr.color = blue ? ColP : ColAI; px.Go.transform.localScale = new Vector3(bs, bs, bs); px.Sr.sortingOrder = 2;
+                }
+                return;
+            }
 
-            // Sprite: real placeholder art when loaded (StreamingAssets), else a white fallback (never invisible).
+            // ---- STATUE / MINE: single sprite ----
+            px.Go.transform.position = new Vector3(p.x, p.y, 0f);
             Sprite spr = PlaceholderAssets.Instance != null ? PlaceholderAssets.Instance.Get(SpriteKey(kind, arch)) : null;
             if (spr == null) spr = Fallback();
             px.Sr.sprite = spr;
-
-            // Size: normalize sprite to a per-kind target world height; units/miners squash a little with HP.
             float spriteH = spr.bounds.size.y; if (spriteH < 0.01f) spriteH = 1f;
-            float targetH = kind == Kind.Statue ? 3.0f : kind == Kind.Mine ? 1.3f : 1.7f; // bigger = more readable
-            float baseScale = targetH / spriteH;
-            float vSquash = (kind == Kind.Statue || kind == Kind.Mine) ? 1f : (0.7f + 0.3f * hpFrac);
-            px.Go.transform.localScale = new Vector3(baseScale, baseScale * vSquash, baseScale);
-
-            // Tint: light team/kind color (faction read), white flash on hit, grey-dim as HP drops.
-            Color baseCol = kind == Kind.UnitP ? ColP : kind == Kind.UnitAI ? ColAI : kind == Kind.Mine ? ColMine : ColStatue;
-            float tintAmt = kind == Kind.Mine ? 0.15f : kind == Kind.Statue ? 0.25f : 0.4f;
-            Color c = px.Flash > 0f ? Color.white
-                    : Color.Lerp(Color.Lerp(Color.white, baseCol, tintAmt), Color.gray, (1f - hpFrac) * 0.5f);
-            px.Sr.color = c;
-            px.Sr.sortingOrder = kind == Kind.Statue ? 0 : kind == Kind.Mine ? 1 : 2; // units in front
+            float baseScale = (kind == Kind.Statue ? 3.0f : 1.3f) / spriteH;
+            px.Go.transform.localScale = new Vector3(baseScale, baseScale, baseScale);
+            Color baseCol = kind == Kind.Mine ? ColMine : ColStatue;
+            float tintAmt = kind == Kind.Mine ? 0.15f : 0.25f;
+            px.Sr.color = px.Flash > 0f ? Color.white : Color.Lerp(Color.Lerp(Color.white, baseCol, tintAmt), Color.gray, (1f - hpFrac) * 0.5f);
+            px.Sr.sortingOrder = kind == Kind.Statue ? 0 : 1;
         }
 
         private Sprite _fallback;
@@ -257,8 +277,9 @@ namespace Bulwark.Bootstrap
             var sr = go.AddComponent<SpriteRenderer>(); // default Sprites material is URP-compatible
             sr.sprite = Fallback();
             var proxy = new Proxy { Go = go, Sr = sr, Kind = kind };
-            // Attach the procedural animator to units only (idle/walk/hit/death) — presentation-only, read-only.
-            if (kind == Kind.UnitP || kind == Kind.UnitAI) proxy.Anim = AnimationManager.Instance?.Attach(go, sr);
+            // Units get the Phase-6 shared skeletal rig (it owns the visual once its sprites load; the plain Sr is a
+            // fallback until then). Statues/mines keep the single sprite. Presentation-only, read-only of the sim.
+            if (kind == Kind.UnitP || kind == Kind.UnitAI) proxy.Rig = go.AddComponent<CharacterRig>();
             return proxy;
         }
 
@@ -282,7 +303,8 @@ namespace Bulwark.Bootstrap
                         VfxManager.Instance?.DeathPuff(dpos);
                     }
                     // Play the death tween (animator self-destructs) in-match; otherwise destroy immediately.
-                    if (px.Anim != null && px.Go != null && PresentationState.InMatch && isUnit) px.Anim.PlayDeath();
+                    if (px.Rig != null && px.Rig.Built && px.Go != null && PresentationState.InMatch && isUnit) px.Rig.PlayDeath(); // rig collapses (≤1.2s) + self-destructs its GameObject
+                    else if (px.Anim != null && px.Go != null && PresentationState.InMatch && isUnit) px.Anim.PlayDeath();
                     else if (px.Go != null) Destroy(px.Go);
                 }
                 _proxies.Remove(dead[i]);
