@@ -60,6 +60,14 @@ namespace Bulwark.Bootstrap
                 case "skins": r.Show<SkinsScreen>(); break;
                 case "units": r.Show<UnitsArmyScreen>(); break;
                 case "events": r.Show<EventsHubScreen>(); break;
+                case "chestopen": r.Show<ChestOpenResultScreen>(); break;
+                case "reward": r.Show<RewardGrantScreen>(); break;
+                case "endless": r.Show<EndlessResultScreen>(); break;
+                case "luckyspin": r.Show<LuckySpinScreen>(); break;
+                case "freerewards": r.Show<FreeRewardsScreen>(); break;
+                case "battlepass": r.Show<BattlePassScreen>(); break;
+                case "online": r.Show<OnlineBattleScreen>(); break;
+                case "commander": r.Show<CommanderSelectScreen>(); break;
                 default: Debug.LogWarning("[AUTOSHOW] unknown screen " + n); break;
             }
         }
